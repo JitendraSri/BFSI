@@ -1,0 +1,321 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Investment Portfolio - BFSI Intelligence</title>
+    <link rel="stylesheet" href="/static/css/styles.css?v=4">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        .asset-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .asset-card:last-child {
+            border-bottom: none;
+        }
+
+        .asset-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(52, 152, 219, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3498db;
+            margin-right: 1rem;
+        }
+
+        .total-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2ecc71;
+            margin-bottom: 0.5rem;
+        }
+
+        .ai-box {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1) 0%, rgba(142, 68, 173, 0.1) 100%);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #aaa;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .btn-delete:hover {
+            opacity: 1;
+        }
+
+        /* AI Analysis Table Styles */
+        .ai-box table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            color: #fff;
+        }
+
+        .ai-box th,
+        .ai-box td {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            text-align: left;
+        }
+
+        .ai-box th {
+            background-color: rgba(52, 152, 219, 0.2);
+            font-weight: bold;
+        }
+
+        .ai-box tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+    <script src="/static/js/navbar.js?v=7"></script>
+
+    <div class="container">
+        <!-- 1) Top Header Row -->
+        <div class="header-row">
+            <h1>💰 Investment Portfolio</h1>
+            <button class="btn" onclick="checkAnalysis()">🤖 AI Portfolio Analysis</button>
+        </div>
+
+        <!-- 2) Portfolio Summary Card -->
+        <div class="bento-grid">
+            <div class="col-span-12">
+                <div class="glass card summary-card">
+                    <span class="summary-label">Total Portfolio Value</span>
+                    <div class="total-value" id="totalValue">₹0.00</div>
+                </div>
+            </div>
+
+            <!-- 3) Main Bento Layout -->
+            <!-- Holdings List (Left) -->
+            <div class="col-span-8 tablet-span-6 mobile-span-12">
+                <div class="glass card h-full">
+                    <div class="card-header">
+                        <h3>Your Holdings</h3>
+                    </div>
+                    <div id="holdingsList" class="holdings-list">
+                        <!-- Items injected here -->
+                        <div class="loading-state">Loading investments...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Investment Form + AI (Right) -->
+            <div class="col-span-4 tablet-span-6 mobile-span-12">
+                <!-- Add Investment Form -->
+                <div class="glass card mb-2">
+                    <div class="card-header">
+                        <h3>➕ Add Investment</h3>
+                    </div>
+                    <form onsubmit="addInvestment(event)" class="investment-form">
+                        <div class="form-group">
+                            <label>Asset Type</label>
+                            <select id="iType" required>
+                                <option value="Stocks">Stocks / Equity</option>
+                                <option value="Mutual Fund">Mutual Fund</option>
+                                <option value="Gold">Gold / Silver</option>
+                                <option value="Fixed Deposit">Fixed Deposit</option>
+                                <option value="Crypto">Crypto</option>
+                                <option value="Real Estate">Real Estate</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Name / Symbol</label>
+                            <input type="text" id="iName" placeholder="e.g. Reliance, HDFC Midcap" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Invested Amount (₹)</label>
+                            <input type="number" id="iAmount" placeholder="e.g. 50000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Current Value (₹)</label>
+                            <input type="number" id="iCurrent" placeholder="e.g. 52000" required>
+                        </div>
+                        <button type="submit" class="btn btn-full">Add to Portfolio</button>
+                    </form>
+                </div>
+
+                <!-- AI Output Box -->
+                <div class="ai-box" id="aiResult" style="display: none;">
+                    <h3 class="ai-header">
+                        <i class="fas fa-robot"></i> Cortex Advisor
+                    </h3>
+                    <div id="aiContent" class="ai-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = 'auth.html';
+
+        let chartInstance = null;
+
+        async function loadInvestments() {
+            try {
+                const res = await fetch(API_BASE + '/api/investments', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                renderPortfolio(data);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderPortfolio(items) {
+            const list = document.getElementById('holdingsList');
+            list.innerHTML = '';
+
+            let total = 0;
+            // Sorting items: largest value first
+            items.sort((a, b) => b.current_value - a.current_value);
+
+            items.forEach(item => {
+                total += item.current_value;
+
+                // Determine Icon based on type
+                let iconClass = 'fa-chart-line';
+                if (item.type === 'Gold') iconClass = 'fa-coins';
+                if (item.type === 'Real Estate') iconClass = 'fa-building';
+                if (item.type === 'Crypto') iconClass = 'fa-bitcoin';
+                if (item.type === 'Fixed Deposit') iconClass = 'fa-piggy-bank';
+                if (item.type === 'Mutual Fund') iconClass = 'fa-balance-scale';
+
+                const div = document.createElement('div');
+                div.className = 'asset-row';
+                div.innerHTML = `
+                    <div class="asset-left">
+                        <div class="asset-icon">
+                            <i class="fas ${iconClass}"></i>
+                        </div>
+                        <div class="asset-info">
+                            <h4>${item.name}</h4>
+                            <p>${item.type}</p>
+                        </div>
+                    </div>
+                    <div class="asset-right">
+                        <div class="asset-values">
+                            <span class="curr">₹${item.current_value.toLocaleString()}</span>
+                            <span class="inv">Inv: ₹${item.amount.toLocaleString()}</span>
+                        </div>
+                        <button class="btn-delete" onclick="deleteAsset('${item.name}')" title="Delete Asset">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+
+            if (items.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-wallet"></i>
+                        <p>No investments added yet.<br>Use the form to add your first asset.</p>
+                    </div>`;
+            }
+
+            document.getElementById('totalValue').innerText = '₹' + total.toLocaleString();
+        }
+
+        async function addInvestment(e) {
+            e.preventDefault();
+            const payload = {
+                type: document.getElementById('iType').value,
+                name: document.getElementById('iName').value,
+                amount: document.getElementById('iAmount').value,
+                current_value: document.getElementById('iCurrent').value
+            };
+
+            await fetch(API_BASE + '/api/investments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify(payload)
+            });
+
+            e.target.reset();
+            loadInvestments();
+        }
+
+        async function deleteAsset(name) {
+            if (!confirm('Remove this asset?')) return;
+            await fetch(API_BASE + '/api/investments/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ name })
+            });
+            loadInvestments();
+        }
+
+        async function checkAnalysis() {
+            const box = document.getElementById('aiResult');
+            const content = document.getElementById('aiContent');
+
+            box.style.display = 'block';
+            content.innerHTML = 'Thinking... (Analyzing Asset Allocation)';
+
+            try {
+                const res = await fetch(API_BASE + '/api/investments/analyze', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                content.innerHTML = data.tips;
+            } catch (e) {
+                content.innerText = "Error fetching analysis.";
+            }
+        }
+
+        loadInvestments();
+    </script>
+    <!-- Curved Background Animation -->
+    <script src="/static/js/curved-bg.js"></script>
+</body>
+
+</html>

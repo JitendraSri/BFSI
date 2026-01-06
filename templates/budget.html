@@ -1,0 +1,204 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Budget & Spend Analytics - BFSI Intelligence</title>
+    <link rel="stylesheet" href="/static/css/styles.css?v=3">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .grid-dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.2) 0%, rgba(41, 128, 185, 0.2) 100%);
+            border: 1px solid rgba(52, 152, 219, 0.4);
+            padding: 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .budget-progress {
+            margin-top: 2rem;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #2ecc71;
+            width: 0%;
+            transition: width 1s;
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+    <script src="/static/js/navbar.js?v=7"></script>
+
+    <div class="container">
+        <h1>📊 Expense Analytics</h1>
+
+        <div class="grid-dashboard mt-2">
+            <!-- Left: Charts & Breakdown -->
+            <div>
+                <div class="glass card summary-card">
+                    <div>
+                        <div style="color: #ccc;">Total Monthly Spending</div>
+                        <h2 style="margin: 0; font-size: 2.5rem;" id="totalSpend">₹0</h2>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #ccc;">Budget Limit</div>
+                        <h3 style="margin: 0; color: #f1c40f;" id="budgetLimit">₹50,000</h3>
+                    </div>
+                </div>
+
+                <div class="glass card mt-2">
+                    <h3>Category Breakdown</h3>
+                    <div style="height: 300px;">
+                        <canvas id="spendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Set Budget & List -->
+            <div>
+                <div class="glass card">
+                    <h3>Set Monthly Budget</h3>
+                    <div class="flex">
+                        <input type="number" id="newBudget" placeholder="Amount (₹)"
+                            style="flex:1; padding: 0.8rem; background:rgba(0,0,0,0.3); border:1px solid #555; border-radius:4px; color: white;">
+                        <button class="btn" style="margin-left: 10px;" onclick="updateBudget()">Update</button>
+                    </div>
+
+                    <div class="budget-progress">
+                        <div class="flex" style="justify-content: space-between; font-size: 0.9rem;">
+                            <span id="pctLabel">0% Used</span>
+                            <span id="remLabel">Remaining: ₹0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progFill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass card mt-2">
+                    <h3>Top Categories</h3>
+                    <div id="catList">
+                        <!-- Injected -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = 'auth.html';
+
+        async function loadData() {
+            try {
+                const res = await fetch(API_BASE + '/api/budget-data', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                renderDashboard(data);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderDashboard(data) {
+            // Summary
+            document.getElementById('totalSpend').innerText = '₹' + data.total_spend.toLocaleString();
+            document.getElementById('budgetLimit').innerText = '₹' + data.budget_limit.toLocaleString();
+
+            // Progress
+            const pct = Math.min((data.total_spend / data.budget_limit) * 100, 100);
+            const fill = document.getElementById('progFill');
+            fill.style.width = pct + '%';
+
+            if (pct > 90) fill.style.backgroundColor = '#e74c3c';
+            else if (pct > 70) fill.style.backgroundColor = '#f1c40f';
+            else fill.style.backgroundColor = '#2ecc71';
+
+            document.getElementById('pctLabel').innerText = pct.toFixed(1) + '% Used';
+            document.getElementById('remLabel').innerText = 'Remaining: ₹' + Math.max(0, data.budget_limit - data.total_spend).toLocaleString();
+
+            // Chart
+            const ctx = document.getElementById('spendChart');
+            new Chart(ctx, {
+                type: 'bar', // Changed to Bar for better categorical compare
+                data: {
+                    labels: data.categories.map(c => c._id),
+                    datasets: [{
+                        label: 'Spending (₹)',
+                        data: data.categories.map(c => c.total),
+                        backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                        borderColor: '#3498db',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // List
+            const list = document.getElementById('catList');
+            list.innerHTML = '';
+            data.categories.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'category-item';
+                div.innerHTML = `
+                    <span>${c._id}</span>
+                    <span style="color: #aaa;">₹${c.total.toLocaleString()}</span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        async function updateBudget() {
+            const amt = document.getElementById('newBudget').value;
+            if (!amt) return;
+
+            await fetch(API_BASE + '/api/update-budget', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ limit: parseFloat(amt) })
+            });
+
+            loadData();
+        }
+
+        loadData();
+    </script>
+</body>
+
+</html>

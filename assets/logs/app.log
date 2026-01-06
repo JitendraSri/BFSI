@@ -1,0 +1,124 @@
+
+2025-12-10 20:32:31,979 ERROR GenAI tips generation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 28.322311014s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 28
+}
+]
+2025-12-10 20:32:33,336 ERROR GenAI tips generation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 26.960317747s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 26
+}
+]
+2025-12-11 10:23:30,340 ERROR GenAI generation error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 29.49871628s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 29
+}
+]
+2025-12-11 10:23:38,593 ERROR GenAI generation error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 21.260716518s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 21
+}
+]
+2025-12-11 10:48:14,807 INFO Starting model training...
+2025-12-11 10:48:16,204 INFO Starting model training...
+2025-12-11 10:48:16,226 INFO Model trained. Accuracy: 0.68, F1: 0.00
+2025-12-11 10:48:16,405 INFO Starting model training...
+2025-12-11 10:48:17,621 INFO Model trained. Accuracy: 0.68, F1: 0.00
+2025-12-11 10:48:19,360 INFO Model trained. Accuracy: 0.68, F1: 0.00
+2025-12-11 10:51:14,538 INFO Starting model training...
+2025-12-11 10:51:15,935 INFO Model trained. Accuracy: 0.68, F1: 0.00
+2025-12-17 23:53:40,040 INFO Generated OTP for tejaskabotula@gmail.com: 359023
+2025-12-17 23:53:56,169 INFO OTP sent successfully to tejaskabotula@gmail.com
+2025-12-19 23:14:03,475 INFO Generated OTP for ayushbiswal2004@gmail.com: 628219
+2025-12-19 23:14:08,432 INFO OTP sent successfully to ayushbiswal2004@gmail.com
+2025-12-22 12:37:09,116 INFO Generated OTP for krupauly@gmail.com: 151536
+2025-12-22 12:37:12,975 INFO OTP sent successfully to krupauly@gmail.com
+2025-12-22 12:39:39,469 INFO Starting model training...
+2025-12-22 12:39:41,934 INFO Model trained. Accuracy: 0.70, F1: 0.22
+2025-12-30 14:13:32,008 INFO Generated OTP for test_1767084211@example.com: 182216
+2025-12-30 14:13:34,123 INFO OTP sent successfully to test_1767084211@example.com
+2025-12-30 14:30:07,219 INFO Generated OTP for fayazahmed89199@gmail.com: 446847
+2025-12-30 14:30:08,331 INFO OTP sent successfully to fayazahmed89199@gmail.com
+2025-12-30 14:32:21,910 INFO Starting model training...
+2025-12-30 14:32:23,964 INFO Model trained. Accuracy: 0.70, F1: 0.22
+2025-12-30 16:04:49,752 INFO Generated OTP for test_seed_123@xyz.com: 911253
+2025-12-30 16:04:52,171 INFO OTP sent successfully to test_seed_123@xyz.com
+2025-12-30 16:11:11,060 INFO Generated OTP for new_user_123@xyz.com: 166375
+2025-12-30 16:11:12,518 INFO OTP sent successfully to new_user_123@xyz.com
+2025-12-30 16:14:12,379 INFO Generated OTP for agent_99@test.com: 943182
+2025-12-30 16:14:13,983 INFO OTP sent successfully to agent_99@test.com
+2026-01-06 16:46:32,543 INFO Generated OTP for talabattulajitendrasri@gmail.com: 225300
+2026-01-06 16:46:35,831 INFO OTP sent successfully to talabattulajitendrasri@gmail.com
+2026-01-06 16:46:56,943 INFO Auto-seeding demo data for empty user: 53a6ace8-5b4c-4196-88f2-fb71b7cc9d75

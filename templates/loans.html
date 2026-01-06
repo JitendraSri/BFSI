@@ -1,0 +1,269 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Loan Calculator - BFSI Intelligence</title>
+    <link rel="stylesheet" href="/static/css/styles.css?v=4">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        .calc-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        .calc-container .card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .result-box {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid #2ecc71;
+            padding: 2rem;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            text-align: center;
+        }
+
+        .emi-value {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #2ecc71;
+            margin: 1rem 0;
+        }
+
+        .slider-group {
+            margin-bottom: 2rem;
+        }
+
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 6px;
+            background: #444;
+            border-radius: 5px;
+            outline: none;
+            appearance: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .loan-types {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .l-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #444;
+            padding: 0.8rem 1.5rem;
+            border-radius: 20px;
+            cursor: pointer;
+            color: #aaa;
+            transition: 0.3s;
+            flex: 1;
+            text-align: center;
+        }
+
+        .l-btn.active {
+            background: #3498db;
+            color: #fff;
+            border-color: #3498db;
+        }
+
+        @media (max-width: 768px) {
+            .calc-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <script src="/static/js/navbar.js?v=7"></script>
+
+    <div class="container">
+        <h1>🧮 Loan Eligibility & EMI Calculator</h1>
+        <p>Plan your borrowing with our advanced EMI calculator and eligibility checker.</p>
+
+        <div class="loans-header mt-2" style="display:none;">
+            <!-- Buttons Removed -->
+        </div>
+
+        <div class="calc-container">
+            <div class="glass card">
+                <h3>Loan Details</h3>
+
+                <div class="slider-group">
+                    <label>
+                        <span id="amtLabel">Loan Amount</span>
+                        <span id="dispAmt" style="color: #3498db;">₹1,00,000</span>
+                    </label>
+                    <input type="range" id="amt" min="10000" max="10000000" step="10000" value="500000"
+                        oninput="calculate()">
+                </div>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Interest Rate (%)</span>
+                        <span id="dispRate" style="color: #3498db;">10.5%</span>
+                    </label>
+                    <input type="range" id="rate" min="1" max="30" step="0.1" value="9.5" oninput="calculate()">
+                </div>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Tenure (Years)</span>
+                        <span id="dispTenure" style="color: #3498db;">2 Years</span>
+                    </label>
+                    <input type="range" id="tenure" min="1" max="30" step="1" value="5" oninput="calculate()">
+                </div>
+
+                <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #444;">
+                    <button class="btn" style="width: 100%; background: #9b59b6;" onclick="checkEligibility()">🏦 Check
+                        Eligibility</button>
+                </div>
+            </div>
+
+            <div class="glass card" style="display: flex; flex-direction: column; padding: 0;">
+                <div class="result-box" id="resultBox">
+                    <h3 style="color: #ccc; margin:0;">Monthly EMI</h3>
+                    <div class="emi-value" id="emiVal">₹-</div>
+
+                    <div class="flex"
+                        style="justify-content: space-between; border-top: 1px solid rgba(46, 204, 113, 0.3); padding-top: 1rem; margin-top: 1rem;">
+                        <div style="text-align: left;">
+                            <small>Total Interest</small>
+                            <div id="totalInt" style="font-weight: bold; color: #e74c3c;">₹-</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <small>Total Payment</small>
+                            <div id="totalPay" style="font-weight: bold;">₹-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="eligibilityResult"
+                    style="display: none; margin: 1rem 2rem; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px;">
+                    Loading eligibility...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculate() {
+            const P = parseFloat(document.getElementById('amt').value);
+            const r = parseFloat(document.getElementById('rate').value);
+            const n = parseFloat(document.getElementById('tenure').value);
+
+            // Update displays
+            document.getElementById('dispAmt').innerText = '₹' + P.toLocaleString();
+            document.getElementById('dispRate').innerText = r + '%';
+            document.getElementById('dispTenure').innerText = n + ' Years';
+
+            // EMI Calculation
+            const R = r / 12 / 100;
+            const N = n * 12;
+
+            let emi = 0;
+            if (P > 0 && r > 0) {
+                emi = (P * R * Math.pow(1 + R, N)) / (Math.pow(1 + R, N) - 1);
+            }
+
+            const totalPay = emi * N;
+            const totalInt = totalPay - P;
+
+            document.getElementById('emiVal').innerText = '₹' + Math.round(emi).toLocaleString();
+            document.getElementById('totalInt').innerText = '₹' + Math.round(totalInt).toLocaleString();
+            document.getElementById('totalPay').innerText = '₹' + Math.round(totalPay).toLocaleString();
+        }
+
+        async function checkEligibility() {
+            const box = document.getElementById('eligibilityResult');
+            box.style.display = 'block';
+            box.innerHTML = 'Checking bank records...';
+
+            const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'auth.html';
+                return;
+            }
+
+            try {
+                const res = await fetch(API_BASE + '/api/check-loan-eligibility', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        monthly_income: 50000,
+                        loan_amount: document.getElementById('amt').value
+                    })
+                });
+
+                let data;
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    data = await res.json();
+                } else {
+                    const text = await res.text();
+                    throw new Error("Server returned non-JSON response: " + text.substring(0, 50));
+                }
+
+                if (res.ok) {
+                    if (data.eligible) {
+                        box.innerHTML = `<div style="color: #2ecc71;"><strong>✅ Pre-Approved!</strong><br>${data.message}</div>`;
+                    } else {
+                        box.innerHTML = `<div style="color: #e74c3c;"><strong>❌ Not Eligible</strong><br>${data.message}</div>`;
+                    }
+                } else {
+                    box.innerHTML = `<div style="color: #e74c3c;">Error: ${data.error || res.statusText}</div>`;
+                }
+            } catch (e) {
+                console.error(e);
+                box.innerHTML = `<div style="color: #e74c3c;">Connection Error: ${e.message}</div>`;
+            }
+        }
+
+        // Init
+        calculate();
+    </script>
+</body>
+
+</html>

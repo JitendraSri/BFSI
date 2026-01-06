@@ -1,0 +1,303 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Insights - BFSI Intelligence</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=3">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .metric-val {
+      font-size: 3rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .metric-label {
+      color: var(--text-muted);
+    }
+
+    .chart-container {
+      position: relative;
+      height: 350px;
+      width: 100%;
+      margin-top: 2rem;
+    }
+
+    .tips-box {
+      background: rgba(46, 204, 113, 0.1);
+      border: 1px solid #2ecc71;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      color: #ddd;
+    }
+
+    .tips-box h3 {
+      margin-top: 0;
+      color: #2ecc71;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="/static/js/navbar.js?v=7"></script>
+
+  <div class="container">
+    <h1>AI Model Insights</h1>
+    <p>Performance metrics of the current Fraud Detection Model (Random Forest).</p>
+
+    <div class="metrics-grid mt-2">
+      <div class="glass card metric-card">
+        <div class="metric-val" id="acc">-</div>
+        <div class="metric-label">Accuracy</div>
+      </div>
+      <div class="glass card metric-card">
+        <div class="metric-val" id="f1">-</div>
+        <div class="metric-label">F1 Score</div>
+      </div>
+      <div class="glass card metric-card">
+        <div class="metric-val" id="prec">-</div>
+        <div class="metric-label">Precision</div>
+      </div>
+      <div class="glass card metric-card">
+        <div class="metric-val" id="rec">-</div>
+        <div class="metric-label">Recall</div>
+      </div>
+    </div>
+
+    <div class="glass card">
+      <h2>Visual Analytics</h2>
+      <div class="chart-container">
+        <canvas id="insightsChart"></canvas>
+      </div>
+    </div>
+
+    <div class="glass card mt-2">
+      <h2>Model Performance Metrics</h2>
+      <div class="chart-container">
+        <canvas id="metricsChart"></canvas>
+      </div>
+      <button class="btn" style="background:#f39c12; margin-top:10px; width:100%" onclick="loadTips()">💡 Get AI
+        Improvement Tips</button>
+      <div id="tipsArea" class="tips-box" style="display:none;">Loading tips...</div>
+    </div>
+
+    <div class="glass card mt-2">
+      <h2>AI Strategic Analysis</h2>
+      <p style="color: #aaa; margin-bottom: 1rem;">Get AI-powered recommendations to improve your fraud detection model
+        performance.</p>
+      <button class="btn" style="background:#f39c12; margin-bottom:10px;" onclick="loadTips()">💡 Ask AI for Improvement
+        Strategy</button>
+      <div id="tipsArea" class="tips-box" style="display:none;">Click the button above to generate AI-powered
+        improvement strategies.</div>
+    </div>
+
+    <div class="glass card mt-2">
+      <h2>Detailed Classification Report</h2>
+      <pre id="fullReport"
+        style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 4px; overflow-x: auto;"></pre>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'auth.html';
+
+    // Track chart instances to prevent canvas reuse errors
+    let radarChartInstance = null;
+    let barChartInstance = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      loadMetrics();
+      loadMetricsChart();
+    });
+
+    async function loadMetrics() {
+      try {
+        const res = await fetch(API_BASE + '/api/metrics', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          document.getElementById('acc').innerText = (data.accuracy * 100).toFixed(1) + '%';
+          document.getElementById('f1').innerText = (data.f1_score * 100).toFixed(1) + '%';
+          document.getElementById('prec').innerText = (data.precision * 100).toFixed(1) + '%';
+          document.getElementById('rec').innerText = (data.recall * 100).toFixed(1) + '%';
+
+          // Format Report as Table
+          let reportHtml = '<table style="width:100%; text-align:left; border-collapse:collapse; color:#ddd;">';
+          reportHtml += '<thead><tr style="border-bottom:1px solid #555;"><th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr></thead><tbody>';
+
+          for (const [key, val] of Object.entries(data.report)) {
+            if (typeof val === 'object') {
+              reportHtml += `<tr>
+                    <td style="padding:8px; font-weight:bold;">${key}</td>
+                    <td style="padding:8px;">${(val.precision * 100).toFixed(1)}%</td>
+                    <td style="padding:8px;">${(val.recall * 100).toFixed(1)}%</td>
+                    <td style="padding:8px;">${(val['f1-score'] * 100).toFixed(1)}%</td>
+                    <td style="padding:8px;">${val.support}</td>
+                </tr>`;
+            }
+          }
+          reportHtml += '</tbody></table>';
+          document.getElementById('fullReport').innerHTML = reportHtml;
+
+          // Destroy existing chart if it exists
+          if (radarChartInstance) {
+            radarChartInstance.destroy();
+          }
+
+          // Load Chart
+          radarChartInstance = new Chart(document.getElementById('insightsChart'), {
+            type: 'radar',
+            data: {
+              labels: ['Accuracy', 'Precision', 'Recall', 'F1 Score'],
+              datasets: [{
+                label: 'Current Model Performance',
+                data: [data.accuracy, data.precision, data.recall, data.f1_score],
+                backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                borderColor: '#2ecc71',
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#fff'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                r: {
+                  angleLines: { color: 'rgba(255,255,255,0.1)' },
+                  grid: { color: 'rgba(255,255,255,0.1)' },
+                  pointLabels: { color: '#ccc', font: { size: 14 } },
+                  suggestedMin: 0,
+                  suggestedMax: 1
+                }
+              }
+            }
+          });
+
+        } else {
+          document.getElementById('fullReport').innerText = "Detailed metrics not found. Please retrain model.";
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadMetricsChart() {
+      try {
+        const res = await fetch(API_BASE + '/api/metrics', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        if (!res.ok) return;
+
+        const canvas = document.getElementById('metricsChart');
+        if (!canvas) return;
+
+        // Destroy existing chart if it exists
+        if (barChartInstance) {
+          barChartInstance.destroy();
+        }
+
+        barChartInstance = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels: ['Accuracy', 'Precision', 'Recall', 'F1'],
+            datasets: [{
+              label: 'Score',
+              data: [data.accuracy, data.precision, data.recall, data.f1_score],
+              backgroundColor: ['#3498db', '#9b59b6', '#2ecc71', '#f1c40f']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                max: 1,
+                beginAtZero: true,
+                ticks: {
+                  callback: function (value) {
+                    return (value * 100).toFixed(0) + '%';
+                  }
+                }
+              }
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return ((context.parsed.y * 100).toFixed(2)) + '%';
+                  }
+                }
+              }
+            }
+          }
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadTips() {
+      const el = document.getElementById('tipsArea');
+      const button = document.querySelector('button[onclick="loadTips()"]');
+
+      // Show loading state
+      el.style.display = 'block';
+      el.innerHTML = '<div style="text-align: center; padding: 1rem;"><i class="fas fa-spinner fa-spin"></i> Analyzing Model Metrics with AI...</div>';
+
+      // Disable button during request
+      if (button) {
+        button.disabled = true;
+        button.innerHTML = '⏳ Analyzing...';
+      }
+
+      try {
+        const res = await fetch(API_BASE + '/api/model-tips', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+
+        if (res.ok && data.tips) {
+          // Format the tips nicely
+          let formattedTips = data.tips
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/^(.+)$/, '<p>$1</p>');
+
+          el.innerHTML = '<h3 style="margin-top: 0; color: #2ecc71;">💡 AI Strategic Analysis</h3>' + formattedTips;
+        } else {
+          el.innerHTML = '<div style="color: #f39c12;"><strong>Note:</strong> ' + (data.error || data.tips || 'No improvement tips available at this time.') + '</div>';
+        }
+      } catch (e) {
+        console.error('Error loading tips:', e);
+        el.innerHTML = '<div style="color: #e74c3c;"><strong>Error:</strong> Failed to load AI analysis. Please check your connection and try again.</div>';
+      } finally {
+        // Re-enable button
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = '💡 Get AI Improvement Tips';
+        }
+      }
+    }
+
+  </script>
+</body>
+
+</html>

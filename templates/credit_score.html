@@ -1,0 +1,248 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Credit Score Simulator - BFSI Intelligence</title>
+    <link rel="stylesheet" href="/static/css/styles.css?v=3">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .score-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 10px solid #2ecc71;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            flex-direction: column;
+            position: relative;
+            transition: border-color 0.5s;
+        }
+
+        .score-val {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .score-label {
+            color: #aaa;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .simulator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .sim-action {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #3498db;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+
+<body>
+    <script src="/static/js/navbar.js?v=7"></script>
+
+    <div class="container">
+        <h1>🛡️ Credit Score Simulator</h1>
+        <p>Analyze how financial actions impact your credit worthiness.</p>
+
+        <div class="simulator-grid mt-2">
+            <!-- Score Display -->
+            <div class="glass card" style="text-align: center;">
+                <h3>Your Simulated Score</h3>
+                <div class="score-circle" id="scoreCircle">
+                    <div class="score-val" id="scoreVal">750</div>
+                    <div class="score-label" id="scoreText">Excellent</div>
+                </div>
+                <div style="margin-top: 1.5rem; color: #ccc;">
+                    National Average: 720
+                </div>
+                <button class="btn mt-2" onclick="saveScore()">Save Score to Profile</button>
+            </div>
+
+            <!-- Simulator Actions -->
+            <div class="glass card">
+                <h3>What-If Scenarios</h3>
+
+                <div class="sim-action">
+                    <span>Miss a Payment (30+ Days)</span>
+                    <label class="switch">
+                        <input type="checkbox" onchange="updateScore(-50, this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="sim-action">
+                    <span>Pay off a Loan fully</span>
+                    <label class="switch">
+                        <input type="checkbox" onchange="updateScore(30, this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="sim-action">
+                    <span>Credit Card Utilization > 80%</span>
+                    <label class="switch">
+                        <input type="checkbox" onchange="updateScore(-40, this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="sim-action">
+                    <span>New Loan Application</span>
+                    <label class="switch">
+                        <input type="checkbox" onchange="updateScore(-10, this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="sim-action">
+                    <span>Account Age > 5 Years</span>
+                    <label class="switch">
+                        <input type="checkbox" onchange="updateScore(20, this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass card mt-2">
+            <h3>💡 Improvement Tips</h3>
+            <ul style="color: #ddd; line-height: 1.8;">
+                <li>Keep credit utilization below 30% of your total limit.</li>
+                <li>Never miss an EMI or credit card bill payment.</li>
+                <li>Maintain a healthy mix of secured (Home/Auto) and unsecured (Personal/Card) loans.</li>
+                <li>Avoid applying for multiple loans in a short span.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = 'auth.html';
+
+        let baseScore = 750;
+        let currentScore = 750;
+
+        async function init() {
+            try {
+                const res = await fetch(API_BASE + '/api/credit-score', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                baseScore = data.score;
+                currentScore = baseScore;
+                renderScore(currentScore);
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        function updateScore(delta, checkbox) {
+            if (checkbox.checked) {
+                currentScore += delta;
+            } else {
+                currentScore -= delta;
+            }
+            renderScore(currentScore);
+        }
+
+        function renderScore(score) {
+            const el = document.getElementById('scoreVal');
+            const circle = document.getElementById('scoreCircle');
+            const text = document.getElementById('scoreText');
+
+            // Animate number
+            el.innerText = score;
+
+            // Color Coding
+            if (score >= 750) {
+                circle.style.borderColor = '#2ecc71'; // Green
+                text.innerText = 'Excellent';
+                text.style.color = '#2ecc71';
+            } else if (score >= 650) {
+                circle.style.borderColor = '#f1c40f'; // Yellow
+                text.innerText = 'Good';
+                text.style.color = '#f1c40f';
+            } else {
+                circle.style.borderColor = '#e74c3c'; // Red
+                text.innerText = 'Needs Work';
+                text.style.color = '#e74c3c';
+            }
+        }
+
+        async function saveScore() {
+            await fetch(API_BASE + '/api/credit-score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ score: currentScore })
+            });
+            alert('Score saved to profile!');
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

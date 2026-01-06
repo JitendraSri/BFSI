@@ -1,0 +1,261 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Upload Data - BFSI Intelligence</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=3">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .upload-area {
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+      padding: 4rem;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .upload-area:hover {
+      border-color: var(--secondary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .upload-area p {
+      font-size: 1.2rem;
+      color: #ccc;
+    }
+
+    .success {
+      color: #4cd137;
+    }
+
+    .error {
+      color: #e84118;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="/static/js/navbar.js?v=7"></script>
+
+  <div class="container">
+    <h1>Upload Transaction Data</h1>
+    <p>Upload your transaction data in CSV, Excel, PDF, or Image format. The system will automatically extract and
+      analyze transaction data.</p>
+
+    <div class="glass card">
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <p><i class="fas fa-cloud-upload-alt" style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary);"></i>
+        </p>
+        <p>Click to browse or drag files here</p>
+        <p style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem;">Supports: CSV, Excel (.xlsx, .xls), PDF, Images
+          (.jpg, .jpeg, .png)</p>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.pdf,.jpg,.jpeg,.png" style="display: none"
+          onchange="handleFileSelect(event)">
+      </div>
+
+      <div id="fileInfo" class="mt-2 text-center" style="display: none;"></div>
+
+      <button id="uploadBtn" class="btn mt-2" style="width: 100%; display: none;" onclick="upload()">
+        <i class="fas fa-upload"></i> Upload & Analyze
+      </button>
+
+      <div id="output" class="mt-2 text-center"></div>
+
+      <div id="progressBar" style="display: none; margin-top: 1rem;">
+        <div style="background: rgba(0,0,0,0.3); border-radius: 10px; height: 20px; overflow: hidden;">
+          <div id="progressFill" style="background: var(--primary); height: 100%; width: 0%; transition: width 0.3s;">
+          </div>
+        </div>
+        <p id="progressText" style="margin-top: 0.5rem; color: #aaa;">Uploading...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Enable drag and drop
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = 'var(--primary)';
+      uploadArea.style.background = 'rgba(78, 84, 200, 0.1)';
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+      uploadArea.style.background = '';
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+      uploadArea.style.background = '';
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        handleFileSelect({ target: fileInput });
+      }
+    });
+
+    function handleFileSelect(event) {
+      const f = event.target.files[0];
+      if (f) {
+        const fileSize = (f.size / 1024).toFixed(1);
+        const fileSizeMB = (f.size / (1024 * 1024)).toFixed(2);
+        const sizeText = fileSizeMB > 1 ? `${fileSizeMB} MB` : `${fileSize} KB`;
+
+        document.getElementById('fileInfo').innerHTML = `
+          <div style="background: rgba(46, 204, 113, 0.1); padding: 1rem; border-radius: 8px; border: 1px solid #2ecc71;">
+            <strong style="color: #2ecc71;">✓ File Selected:</strong> ${f.name}<br>
+            <small style="color: #aaa;">Size: ${sizeText} | Type: ${f.type || 'Unknown'}</small>
+          </div>
+        `;
+        document.getElementById('fileInfo').style.display = 'block';
+        document.getElementById('uploadBtn').style.display = 'inline-block';
+        document.getElementById('output').innerHTML = '';
+      }
+    }
+
+    async function upload() {
+      const f = document.getElementById('fileInput').files[0];
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Session expired. Please login.');
+        window.location.href = 'auth.html';
+        return;
+      }
+
+      if (!f) {
+        alert('Please select a file first.');
+        return;
+      }
+
+      const uploadBtn = document.getElementById('uploadBtn');
+      const progressBar = document.getElementById('progressBar');
+      const progressFill = document.getElementById('progressFill');
+      const progressText = document.getElementById('progressText');
+      const output = document.getElementById('output');
+
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+      progressBar.style.display = 'block';
+      output.innerHTML = '';
+
+      // Simulate progress
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += 10;
+        if (progress <= 90) {
+          progressFill.style.width = progress + '%';
+          progressText.textContent = `Uploading... ${progress}%`;
+        }
+      }, 200);
+
+      const fd = new FormData();
+      fd.append('file', f);
+
+      try {
+        const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+        const res = await fetch(API_BASE + '/upload', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: fd
+        });
+
+        clearInterval(progressInterval);
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Processing...';
+
+        const data = await res.json();
+
+        if (res.ok) {
+          progressText.textContent = 'Complete!';
+          let successHtml = `
+            <div style="background: rgba(46, 204, 113, 0.1); padding: 1.5rem; border-radius: 8px; border: 1px solid #2ecc71; margin-top: 1rem;">
+              <p class="success" style="font-size: 1.1rem;"><strong>✓ Successfully uploaded and analyzed!</strong></p>
+              <p style="color: #ccc; margin-top: 0.5rem;">Imported <strong>${data.imported}</strong> transaction records.</p>
+          `;
+
+          if (data.explanation) {
+            const riskColor = data.risk_percentage > 70 ? '#e74c3c' : (data.risk_percentage > 30 ? '#f1c40f' : '#2ecc71');
+            successHtml += `
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: left;">
+                    <p style="color: #fff; margin-bottom: 0.5rem;"><strong>AI Analysis:</strong></p>
+                    <p style="color: #ddd; font-size: 0.95rem;">${data.explanation}</p>
+                    <div style="margin-top: 0.8rem; display: flex; align-items: center; gap: 10px;">
+                        <span style="color: #aaa;">Risk Score:</span>
+                        <div style="flex: 1; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                            <div style="width: ${data.risk_percentage}%; background: ${riskColor}; height: 100%;"></div>
+                        </div>
+                        <span style="color: ${riskColor}; font-weight: bold;">${data.risk_percentage}%</span>
+                    </div>
+                </div>
+                </div>
+                <div style="margin-top: 1.5rem; text-align: center;">
+                    <button onclick="window.location.href='fraudalerts.html'" class="btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">View in Alerts >></button>
+                </div>
+             `;
+          } else {
+            successHtml += `<p style="color: #aaa; font-size: 0.9rem; margin-top: 1rem;">Redirecting to alerts page...</p></div>`;
+          }
+
+          output.innerHTML = successHtml;
+
+          // Only auto-redirect if it's NOT an image analysis
+          if (!data.explanation) {
+            setTimeout(() => {
+              window.location.href = 'fraudalerts.html';
+            }, 2000);
+          }
+        } else {
+          clearInterval(progressInterval);
+          progressBar.style.display = 'none';
+
+          let errorHtml = `
+            <div style="background: rgba(231, 76, 60, 0.1); padding: 1.5rem; border-radius: 8px; border: 1px solid #e74c3c; margin-top: 1rem;">
+              <p class="error" style="font-size: 1.1rem;"><strong>⚠️ ${data.error || 'Upload failed'}</strong></p>
+          `;
+
+          if (data.detail) {
+            errorHtml += `<p style="color: #ddd; margin-top: 0.5rem; white-space: pre-wrap;">${data.detail}</p>`;
+          }
+
+          if (data.hint) {
+            errorHtml += `<p style="color: #f39c12; margin-top: 1rem; padding: 0.75rem; background: rgba(243, 156, 18, 0.1); border-radius: 4px; border-left: 3px solid #f39c12;"><strong>💡 Hint:</strong> ${data.hint}</p>`;
+          }
+
+          if (data.required_columns && data.found_columns) {
+            errorHtml += `
+              <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>Required columns:</strong> ${data.required_columns.join(', ')}</p>
+                <p style="color: #aaa; font-size: 0.9rem;"><strong>Found columns:</strong> ${data.found_columns.join(', ')}</p>
+              </div>
+            `;
+          }
+
+          errorHtml += `</div>`;
+
+          output.innerHTML = errorHtml;
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Analyze';
+        }
+      } catch (err) {
+        clearInterval(progressInterval);
+        progressBar.style.display = 'none';
+        output.innerHTML = `
+          <div style="background: rgba(231, 76, 60, 0.1); padding: 1rem; border-radius: 8px; border: 1px solid #e74c3c;">
+            <p class="error"><strong>Network Error:</strong> Failed to connect to server. Please check your connection and try again.</p>
+          </div>
+        `;
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Analyze';
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,194 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Transactions - BFSI Intelligence</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=3">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .txn-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .txn-table th,
+    .txn-table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .txn-table th {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+    }
+
+    .status-safe {
+      color: #4cd137;
+    }
+
+    .status-fraud {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="/static/js/navbar.js?v=7"></script>
+
+  <div class="container">
+    <h1>Transaction History</h1>
+
+    <div class="glass card" style="margin-bottom: 1rem;">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <button class="btn" onclick="filterRange('1w')">Last 1 Week</button>
+        <button class="btn" onclick="filterRange('2w')">Last 2 Weeks</button>
+        <button class="btn" onclick="filterRange('1m')">Last 1 Month</button>
+        <button class="btn" onclick="filterRange('6m')">Last 6 Months</button>
+        <button class="btn" onclick="filterRange('this_month')">This Month</button>
+        <div style="border-left: 1px solid #555; padding-left: 10px; margin-left: 10px; display: flex; gap: 5px;">
+          <input type="date" id="startDate" style="padding: 5px; border-radius: 4px; border:none;">
+          <span style="color:white">-</span>
+          <input type="date" id="endDate" style="padding: 5px; border-radius: 4px; border:none;">
+          <button class="btn" style="background:#2ecc71" onclick="applyCustomFilter()">Go</button>
+          <button class="btn" style="background:#95a5a6" onclick="resetFilters()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass card">
+      <table class="txn-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Channel</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="txnBody">
+          <tr>
+            <td colspan="5" class="text-center">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin.replace(/:\d+$/, ':5000');
+    const token = localStorage.getItem('token');
+
+    if (!token) window.location.href = 'auth.html';
+
+    // Load transactions immediately on page load
+    document.addEventListener('DOMContentLoaded', function () {
+      loadTxns();
+    });
+
+
+    async function loadTxns(start = null, end = null) {
+      try {
+        let url = API_BASE + '/api/transactions?limit=100';
+        if (start) url += `&start_date=${start}`;
+        if (end) url += `&end_date=${end}`;
+
+        const res = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+
+        const tbody = document.getElementById('txnBody');
+        tbody.innerHTML = '';
+
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center">No transactions found.</td></tr>';
+          return;
+        }
+
+        data.forEach(txn => {
+          // txn structure: transaction_id, user_id, customer_id, kyc_verified, account_age_days, transaction_amount, channel, timestamp, is_fraud
+
+          const date = new Date(txn.timestamp).toLocaleString();
+          const isFraud = txn.is_fraud === 1;
+          const statusHtml = isFraud ? '<span class="status-fraud">ALERT</span>' : '<span class="status-safe">Safe</span>';
+
+          const tr = `
+             <tr id="row-${txn.transaction_id}">
+               <td>TXN_${txn.transaction_id}</td>
+               <td>${date}</td>
+               <td>₹${txn.transaction_amount}</td>
+               <td>${txn.channel}</td>
+               <td>${statusHtml}</td>
+               <td>
+                 <button class="btn" style="background: #e74c3c; padding: 4px 8px; font-size: 0.8rem;" onclick="deleteTxn('${txn.transaction_id}')">Delete</button>
+               </td>
+             </tr>
+           `;
+          tbody.innerHTML += tr;
+        });
+      } catch (e) {
+        console.error(e);
+        document.getElementById('txnBody').innerHTML = '<tr><td colspan="6" class="text-center">Error loading data</td></tr>';
+      }
+    }
+
+    async function deleteTxn(id) {
+      if (!confirm('Are you sure you want to delete Transaction TXN_' + id + '?')) return;
+
+      try {
+        const res = await fetch(API_BASE + '/api/transactions/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+          document.getElementById('row-' + id).remove();
+        } else {
+          alert('Failed to delete transaction.');
+        }
+      } catch (e) {
+        alert('Connection error');
+      }
+    }
+    function filterRange(range) {
+      const now = new Date();
+      let start = new Date();
+
+      if (range === '1w') start.setDate(now.getDate() - 7);
+      if (range === '2w') start.setDate(now.getDate() - 14);
+      if (range === '1m') start.setMonth(now.getMonth() - 1);
+      if (range === '6m') start.setMonth(now.getMonth() - 6);
+      if (range === 'this_month') {
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+
+      // Format YYYY-MM-DD
+      const startStr = start.toISOString().split('T')[0];
+      const endStr = new Date(now.getTime() + 86400000).toISOString().split('T')[0];
+
+      loadTxns(startStr, endStr);
+    }
+
+    function applyCustomFilter() {
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
+      if (!start || !end) return alert("Please select both dates");
+      loadTxns(start, end + ' 23:59:59');
+    }
+
+    function resetFilters() {
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+      loadTxns();
+    }
+  </script>
+  <!-- Curved Background Animation -->
+  <script src="/static/js/curved-bg.js"></script>
+</body>
+
+</html>

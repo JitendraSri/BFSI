@@ -1,0 +1,269 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Predictive Modeling - BFSI Intelligence</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=4">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .chart-container {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+
+    .tips-box {
+      background: rgba(46, 204, 113, 0.1);
+      border: 1px solid #2ecc71;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      color: #ddd;
+    }
+
+    .tips-box h3 {
+      margin-top: 0;
+      color: #2ecc71;
+    }
+
+    .pred-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    .monitor {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: monospace;
+      height: 200px;
+      overflow-y: auto;
+      color: #4cd137;
+      font-size: 0.9rem;
+    }
+
+    .risk-meter {
+      height: 20px;
+      background: #333;
+      border-radius: 10px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      transition: width 0.5s, background-color 0.5s;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="/static/js/navbar.js?v=7"></script>
+
+  <div class="container">
+    <div class="flex" style="justify-content: space-between; align-items: center;">
+      <h1>Predictive Analytics</h1>
+      <button class="btn" onclick="retrainModel()">🔄 Retrain Model</button>
+    </div>
+    <p>Use the Random Forest model to estimate risk for new transactions.</p>
+
+    <div class="pred-container mt-2">
+      <!-- Simulator Form -->
+      <div class="glass card">
+        <h2>Transaction Simulator</h2>
+        <form onsubmit="predict(event)">
+          <label>Transaction Amount (₹)</label>
+          <input type="number" id="pAmount" placeholder="e.g. 50000" required>
+
+          <label>Channel</label>
+          <select id="pChannel">
+            <option value="UPI">UPI</option>
+            <option value="CARD">Card</option>
+            <option value="NETBANKING">Net Banking</option>
+            <option value="WALLET">Wallet</option>
+          </select>
+
+          <div class="flex">
+            <div style="flex:1">
+              <label>Account Age (Days)</label>
+              <input type="number" id="pAge" placeholder="e.g. 30" required>
+            </div>
+            <div style="flex:1">
+              <label>KYC Verified</label>
+              <select id="pKyc">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn mt-2" style="width: 100%">Calculate Risk</button>
+        </form>
+      </div>
+
+      <!-- Results -->
+      <div class="glass card">
+        <h2>Prediction Result</h2>
+        <div id="resultArea" style="display:none; text-align: center; padding: 2rem;">
+          <h3 id="riskLabel">Safe</h3>
+          <div class="stat-value" id="riskProb">12%</div>
+          <div class="risk-meter">
+            <div class="meter-fill" id="riskMeter"></div>
+          </div>
+          <p class="mt-2" style="color: #ccc">Probability of Fraud</p>
+        </div>
+        <div id="placeholderResult" class="text-center" style="padding: 2rem; color: #aaa;">
+          Fill the form to see AI prediction.
+        </div>
+      </div>
+    </div>
+
+    <div class="glass card mt-2" id="riskSuggestions" style="display:none;">
+      <h2>💡 Risk Reduction Suggestions</h2>
+      <div id="suggestionsContent"></div>
+    </div>
+
+    <div class="glass card mt-2">
+      <h2>Model Training Logs</h2>
+      <div id="trainLog" class="monitor">System Ready.</div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+    const token = localStorage.getItem('token');
+
+    if (!token) window.location.href = 'auth.html';
+
+    async function predict(e) {
+      e.preventDefault();
+      const amount = document.getElementById('pAmount').value;
+      const channel = document.getElementById('pChannel').value;
+      const age = document.getElementById('pAge').value;
+      const kyc = document.getElementById('pKyc').value;
+
+      try {
+        const res = await fetch(API_BASE + '/api/predict', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ amount, channel, account_age: age, kyc_verified: kyc })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          showResult(data.probability);
+        } else if (data.status === 'not_ready') {
+          alert('Model is not trained yet. Click "Retrain Model" first.');
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert('Connection failed');
+      }
+    }
+
+    function showResult(prob) {
+      document.getElementById('placeholderResult').style.display = 'none';
+      document.getElementById('resultArea').style.display = 'block';
+
+      const pct = (prob * 100).toFixed(1);
+      document.getElementById('riskProb').innerText = pct + '%';
+
+      const meter = document.getElementById('riskMeter');
+      meter.style.width = pct + '%';
+
+      const label = document.getElementById('riskLabel');
+      const suggestionsDiv = document.getElementById('riskSuggestions');
+      const suggestionsContent = document.getElementById('suggestionsContent');
+
+      if (prob > 0.7) {
+        label.innerText = 'High Risk';
+        label.style.color = '#e74c3c';
+        meter.style.backgroundColor = '#e74c3c';
+
+        // Show high risk suggestions
+        suggestionsDiv.style.display = 'block';
+        suggestionsContent.innerHTML = `
+          <div style="color: #e74c3c; margin-bottom: 1rem;"><strong>⚠️ High Risk Transaction Detected</strong></div>
+          <ul style="text-align: left; color: #ddd; line-height: 1.8;">
+            <li><strong>Verify Recipient:</strong> Double-check the recipient's account details and contact them directly to confirm.</li>
+            <li><strong>Split Transaction:</strong> Consider breaking large amounts into smaller transactions over multiple days.</li>
+            <li><strong>Use Secure Channel:</strong> Prefer using Net Banking or official banking apps instead of third-party wallets.</li>
+            <li><strong>Enable 2FA:</strong> Ensure two-factor authentication is enabled for added security.</li>
+            <li><strong>Verify KYC:</strong> Complete your KYC verification to reduce risk flags.</li>
+            <li><strong>Wait Period:</strong> Consider waiting 24-48 hours before processing high-value transactions.</li>
+            <li><strong>Contact Support:</strong> Reach out to customer support if this is a legitimate transaction.</li>
+          </ul>
+        `;
+      } else if (prob > 0.3) {
+        label.innerText = 'Medium Risk';
+        label.style.color = '#fbc531';
+        meter.style.backgroundColor = '#fbc531';
+
+        // Show medium risk suggestions
+        suggestionsDiv.style.display = 'block';
+        suggestionsContent.innerHTML = `
+          <div style="color: #fbc531; margin-bottom: 1rem;"><strong>⚡ Medium Risk Transaction</strong></div>
+          <ul style="text-align: left; color: #ddd; line-height: 1.8;">
+            <li><strong>Verify Details:</strong> Confirm recipient information before proceeding.</li>
+            <li><strong>Monitor Account:</strong> Keep an eye on your account activity after this transaction.</li>
+            <li><strong>Use Verified Channels:</strong> Prefer using channels you've used before successfully.</li>
+            <li><strong>Enable Alerts:</strong> Set up SMS/Email alerts for transaction notifications.</li>
+            <li><strong>Review History:</strong> Check if similar transactions were successful in the past.</li>
+          </ul>
+        `;
+      } else {
+        label.innerText = 'Safe';
+        label.style.color = '#4cd137';
+        meter.style.backgroundColor = '#4cd137';
+
+        // Show safe transaction tips
+        suggestionsDiv.style.display = 'block';
+        suggestionsContent.innerHTML = `
+          <div style="color: #4cd137; margin-bottom: 1rem;"><strong>✅ Low Risk Transaction</strong></div>
+          <ul style="text-align: left; color: #ddd; line-height: 1.8;">
+            <li><strong>Best Practices:</strong> Continue following secure transaction practices.</li>
+            <li><strong>Regular Monitoring:</strong> Review your transaction history regularly.</li>
+            <li><strong>Keep KYC Updated:</strong> Maintain verified KYC status for smooth transactions.</li>
+            <li><strong>Stay Alert:</strong> Report any suspicious activity immediately.</li>
+          </ul>
+        `;
+      }
+    }
+
+    async function retrainModel() {
+      log('Initiating training...');
+      try {
+        const res = await fetch(API_BASE + '/api/retrain', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          log('Training started in background.');
+          log('Please wait ~10 seconds before testing predictions.');
+        } else {
+          log('Error: ' + data.error);
+        }
+      } catch (e) {
+        log('Connection error.');
+      }
+    }
+
+
+    function log(msg) {
+      const el = document.getElementById('trainLog');
+      el.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+      el.scrollTop = el.scrollHeight;
+    }
+  </script>
+</body>
+
+</html>

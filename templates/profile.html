@@ -1,0 +1,294 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>User Profile - BFSI Intelligence</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=3">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .profile-card {
+      max-width: 500px;
+      margin: 2rem auto;
+      padding: 3rem;
+      text-align: center;
+    }
+
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      background: var(--primary);
+      border-radius: 50%;
+      margin: 0 auto 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      color: #fff;
+    }
+
+    .form-group {
+      text-align: left;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #aaa;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
+      color: #fff;
+    }
+
+    .form-group input:disabled {
+      color: #777;
+      cursor: not-allowed;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="/static/js/navbar.js?v=7"></script>
+
+  <div class="container">
+    <div class="glass card profile-card">
+      <div style="position: relative; display: inline-block;">
+        <div class="profile-avatar" id="avatar" style="cursor: pointer;"
+          onclick="document.getElementById('imageInput').click()">
+          <img id="avatarImg" src=""
+            style="display: none; width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+          <span id="avatarText">U</span>
+        </div>
+        <div
+          style="position: absolute; bottom: 0; right: 0; background: var(--primary); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--bg);"
+          onclick="document.getElementById('imageInput').click()" title="Edit Profile Picture">
+          <i class="fas fa-pen" style="font-size: 0.8rem;"></i>
+        </div>
+        <input type="file" id="imageInput" accept="image/*" style="display: none" onchange="handleImageUpload(event)">
+      </div>
+      <h2 id="displayName">Loading...</h2>
+
+      <div class="mt-2" id="msgArea"></div>
+
+      <div class="form-group mt-2">
+        <label>Full Name</label>
+        <input type="text" id="name" disabled>
+      </div>
+
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="email" disabled>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="editBtn" onclick="toggleEdit()">Edit Profile</button>
+        <button class="btn" id="saveBtn" style="background:#2ecc71; display:none;" onclick="saveProfile()">Save
+          Changes</button>
+        <button class="btn" style="background:#e74c3c" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'auth.html';
+
+    let currentUser = {};
+
+    document.addEventListener('DOMContentLoaded', loadProfile);
+
+    async function loadProfile() {
+      // 1. Load from cache for instant display
+      const cached = localStorage.getItem('user');
+      if (cached) {
+        try {
+          const user = JSON.parse(cached);
+          currentUser = user;
+          render(user);
+        } catch (e) { console.error('Cache parse error', e); }
+      }
+
+      // 2. Fetch fresh data
+      try {
+        const res = await fetch(API_BASE + '/api/profile', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+          const user = await res.json();
+          currentUser = user;
+          localStorage.setItem('user', JSON.stringify(user)); // Update cache
+          render(user);
+        } else {
+          if (!cached) document.getElementById('msgArea').innerHTML = '<span style="color:red">Failed to load profile</span>';
+        }
+      } catch (e) {
+        console.error(e);
+        if (!cached) document.getElementById('msgArea').innerHTML = '<span style="color:red">Connection error</span>';
+      }
+    }
+
+    function render(user) {
+      if (!user) return;
+      document.getElementById('displayName').innerText = user.name;
+      document.getElementById('name').value = user.name;
+      document.getElementById('email').value = user.email;
+
+      // Handle avatar
+      const avatarImg = document.getElementById('avatarImg');
+      const avatarText = document.getElementById('avatarText');
+
+      if (user.profile_image) {
+        // If it's a Data URI (stored in DB base64), use as is.
+        // If it's a relative path (legacy), prepend API_BASE
+        if (user.profile_image.startsWith('data:')) {
+          avatarImg.src = user.profile_image;
+        } else {
+          avatarImg.src = API_BASE + user.profile_image;
+        }
+        avatarImg.style.display = 'block';
+        avatarText.style.display = 'none';
+        avatarImg.style.display = 'block';
+        avatarText.style.display = 'none';
+      } else if (user.name) {
+        avatarText.innerText = user.name.charAt(0).toUpperCase();
+        avatarText.style.display = 'block';
+        avatarImg.style.display = 'none';
+      } else {
+        avatarText.innerText = 'U';
+        avatarText.style.display = 'block';
+        avatarImg.style.display = 'none';
+      }
+    }
+
+    async function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        document.getElementById('msgArea').innerHTML = '<span style="color:red">Please select an image file.</span>';
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        document.getElementById('msgArea').innerHTML = '<span style="color:red">Image size must be less than 5MB.</span>';
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('image', file);
+
+      document.getElementById('msgArea').innerHTML = '<span style="color:#f39c12">Uploading image...</span>';
+
+      try {
+        const res = await fetch(API_BASE + '/api/profile/image', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData
+        });
+
+        let data;
+        const text = await res.text();
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          console.error('JSON Parse Error:', text);
+          throw new Error('Server returned invalid JSON: ' + text.substring(0, 50) + '...');
+        }
+
+        if (res.ok) {
+          document.getElementById('msgArea').innerHTML = '<span style="color:#2ecc71">Profile image updated!</span>';
+
+          // Update avatar immediately
+          const avatarImg = document.getElementById('avatarImg');
+          const avatarText = document.getElementById('avatarText');
+
+          if (data.profile_image) {
+            avatarImg.src = data.profile_image;
+            avatarImg.style.display = 'block';
+            avatarText.style.display = 'none';
+          }
+
+          // Update user in localStorage
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          user.profile_image = data.profile_image;
+          localStorage.setItem('user', JSON.stringify(user));
+        } else {
+          document.getElementById('msgArea').innerHTML = '<span style="color:red">Error: ' + (data.error || data.detail || 'Failed to upload') + '</span>';
+        }
+      } catch (e) {
+        document.getElementById('msgArea').innerHTML = `<span style="color:red">Connection error: ${e.message}</span>`;
+      }
+    }
+
+    function toggleEdit() {
+      const disabled = document.getElementById('name').disabled;
+      document.getElementById('name').disabled = !disabled;
+      document.getElementById('email').disabled = !disabled;
+
+      document.getElementById('editBtn').style.display = disabled ? 'none' : 'inline-block';
+      document.getElementById('saveBtn').style.display = disabled ? 'inline-block' : 'none';
+
+      if (!disabled) {
+        // Cancel clicked (technically toggle back)
+        if (currentUser.name) render(currentUser); // reset
+      }
+    }
+
+    async function saveProfile() {
+      const newName = document.getElementById('name').value;
+      const newEmail = document.getElementById('email').value;
+
+      try {
+        const res = await fetch(API_BASE + '/api/profile', {
+          method: 'PUT',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name: newName, email: newEmail })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          document.getElementById('msgArea').innerHTML = '<span style="color:#2ecc71">Profile updated!</span>';
+          currentUser.name = newName;
+          currentUser.email = newEmail;
+          localStorage.setItem('user', JSON.stringify(currentUser)); // Update cache
+          render(currentUser);
+        } else {
+          document.getElementById('msgArea').innerHTML = `<span style="color:red">${data.error}</span>`;
+          // If error, we still revert to view mode as requested, but user loses changes if we don't watch out.
+          // toggleEdit() resets to currentUser values.
+        }
+      } catch (e) {
+        document.getElementById('msgArea').innerHTML = '<span style="color:red">Connection error</span>';
+      } finally {
+        // ALWAYS revert to "Edit Profile" button (View Mode)
+        // Check if currently in edit mode (inputs key enabled) to avoid double toggle if something weird happens
+        if (!document.getElementById('name').disabled) {
+          toggleEdit();
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>

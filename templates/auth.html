@@ -1,0 +1,348 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Auth - BFSI Intelligence</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=3">
+  <style>
+    .auth-container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .auth-left {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 2rem;
+    }
+
+    .auth-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-box {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="auth-container">
+    <div class="auth-left glass">
+      <h1>BFSI Intelligence</h1>
+      <p style="font-size: 1.2rem; text-align: center; color: #ccc;">
+        Advanced Fraud Detection & Predictive Analytics for the Financial Sector.
+      </p>
+    </div>
+    <div class="auth-right">
+      <div class="auth-box glass card">
+
+        <!-- Login Form -->
+        <div id="loginForm">
+          <h2 class="text-center">Login</h2>
+          <form onsubmit="handleLogin(event)">
+            <input type="email" id="loginEmail" placeholder="Email Address" required>
+            <input type="password" id="loginPass" placeholder="Password" required>
+            <button type="submit" class="btn" style="width: 100%">Sign In</button>
+          </form>
+          <p class="text-center mt-2">
+            New user? <a href="#" onclick="toggleAuth()">Create an account</a>
+          </p>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerForm" class="hidden">
+          <h2 class="text-center">Register</h2>
+          <form onsubmit="handleRegister(event)">
+            <input type="text" id="regName" placeholder="Full Name" required>
+            <input type="email" id="regEmail" placeholder="Email Address" required>
+            <input type="password" id="regPass" placeholder="Password" required>
+            <input type="number" id="regBalance" placeholder="Initial Deposit (₹) (Optional)"
+              style="margin-bottom: 1rem;">
+            <button type="submit" class="btn" style="width: 100%">Register</button>
+          </form>
+          <p class="text-center mt-2">
+            Already have an account? <a href="#" onclick="toggleAuth()">Sign In</a>
+          </p>
+        </div>
+
+
+        <!-- Forgot Password Link -->
+        <div id="forgotLink" class="text-center mt-2 hidden">
+          <a href="#" onclick="showForgot()">Forgot Password?</a>
+        </div>
+
+        <!-- Verify OTP Form -->
+        <div id="verifyForm" class="hidden">
+          <h2 class="text-center">Verify Email</h2>
+          <p class="text-center" style="color: #ccc; font-size: 0.9rem;">Enter the OTP sent to your email</p>
+          <form onsubmit="handleVerify(event)">
+            <input type="email" id="verifyEmail" placeholder="Email Address" required disabled>
+            <input type="text" id="verifyOtp" placeholder="Enter OTP" required>
+            <button type="submit" class="btn" style="width: 100%">Verify Account</button>
+          </form>
+          <p class="text-center mt-2">
+            <a href="#" onclick="toggleAuth()">Back to Login</a>
+          </p>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div id="forgotForm" class="hidden">
+          <h2 class="text-center">Reset Password</h2>
+          <form onsubmit="handleForgot(event)">
+            <input type="email" id="forgotEmail" placeholder="Enter your registered email" required>
+            <button type="submit" class="btn" style="width: 100%">Send OTP</button>
+          </form>
+          <p class="text-center mt-2">
+            <a href="#" onclick="toggleAuth()">Back to Login</a>
+          </p>
+        </div>
+
+        <!-- Reset Password Form -->
+        <div id="resetForm" class="hidden">
+          <h2 class="text-center">New Password</h2>
+          <form onsubmit="handleReset(event)">
+            <input type="email" id="resetEmail" placeholder="Email Address" required disabled>
+            <input type="text" id="resetOtp" placeholder="Enter OTP" required>
+            <input type="password" id="resetPass" placeholder="New Password" required>
+            <button type="submit" class="btn" style="width: 100%">Update Password</button>
+          </form>
+        </div>
+
+        <div id="message" class="text-center mt-2" style="color: #ff6b6b"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Use the current hostname to connect to the backend on port 5000
+    const API_BASE = `http://${window.location.hostname || '127.0.0.1'}:5000`;
+    console.log("API_BASE set to:", API_BASE);
+
+    // Store email for multi-step flows
+    let currentEmail = '';
+
+    function toggleAuth() {
+      // Hide all forms first
+      ['loginForm', 'registerForm', 'verifyForm', 'forgotForm', 'resetForm'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById('message').innerText = '';
+
+      // Toggle between login and register as default behavior, or reset to login
+      // A simple logic: if login is hidden, show it. If login is visible, show register.
+      // But we have more states now. Let's make it simple:
+      // If called from link "Create an account", we want register.
+      // If called from "Sign In", we want login.
+      // Since the links call this same function, we might need state or check what's visible.
+      // Let's implement specific functions for clarity, or improve this one.
+
+      // Current usage in HTML: onclick="toggleAuth()"
+      // Let's assume it switches Login <-> Register. 
+      // To recover from other states (Verify/Forgot), we should probably default to Login.
+    }
+
+    // Improved navigation
+    function showLogin() {
+      hideAll();
+      document.getElementById('loginForm').classList.remove('hidden');
+      document.getElementById('forgotLink').classList.remove('hidden');
+    }
+
+    function showRegister() {
+      hideAll();
+      document.getElementById('registerForm').classList.remove('hidden');
+    }
+
+    function showForgot() {
+      hideAll();
+      document.getElementById('forgotForm').classList.remove('hidden');
+    }
+
+    function hideAll() {
+      ['loginForm', 'registerForm', 'verifyForm', 'forgotForm', 'resetForm', 'forgotLink'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById('message').innerText = '';
+    }
+
+    // Override the old toggleAuth to map to new functions for compatibility
+    function toggleAuth() {
+      if (document.getElementById('loginForm').classList.contains('hidden')) {
+        showLogin();
+      } else {
+        showRegister();
+      }
+    }
+
+    // Initialize
+    showLogin();
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPass').value;
+
+      try {
+        const res = await fetch(`${API_BASE}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          try {
+            localStorage.setItem('token', data.token);
+            if (data.user) {
+              localStorage.setItem('user', JSON.stringify(data.user));
+            }
+          } catch (storageErr) {
+            console.warn("localStorage full, continuing anyway:", storageErr);
+            // Even if storage is full, we try to proceed to dashboard
+          }
+          window.location.href = 'dashboard.html';
+        } else {
+          const msg = data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Login failed');
+          document.getElementById('message').innerText = msg;
+
+          if (msg.includes('verify')) {
+            currentEmail = email;
+            document.getElementById('verifyEmail').value = currentEmail;
+            hideAll();
+            document.getElementById('verifyForm').classList.remove('hidden');
+            document.getElementById('message').innerText = "Please verify your account.";
+          }
+        }
+      } catch (err) {
+        console.error("Login Fetch Error:", err);
+        document.getElementById('message').innerText = `Connection Error: Backend unreachable (${err.message}). Is it running at ${API_BASE}?`;
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById('regName').value;
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPass').value;
+      const balance = document.getElementById('regBalance').value;
+
+      try {
+        const res = await fetch(`${API_BASE}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, initial_balance: balance })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          currentEmail = email;
+          document.getElementById('verifyEmail').value = currentEmail;
+          hideAll();
+          document.getElementById('verifyForm').classList.remove('hidden');
+          alert('Registration successful! OTP sent to your email.');
+        } else {
+          const msg = data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Registration failed');
+          document.getElementById('message').innerText = msg;
+        }
+      } catch (err) {
+        console.error("Register Fetch Error:", err);
+        document.getElementById('message').innerText = `Connection Error: Backend unreachable (${err.message}). Is it running at ${API_BASE}?`;
+      }
+    }
+
+    async function handleVerify(e) {
+      e.preventDefault();
+      const otp = document.getElementById('verifyOtp').value;
+      const email = document.getElementById('verifyEmail').value || currentEmail;
+
+      try {
+        const res = await fetch(`${API_BASE}/verify-registration`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          alert('Verification successful! Please login.');
+          showLogin();
+        } else {
+          document.getElementById('message').innerText = data.error || 'Verification failed';
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('message').innerText = 'Request failed: ' + err.message;
+      }
+    }
+
+    async function handleForgot(e) {
+      e.preventDefault();
+      const email = document.getElementById('forgotEmail').value;
+      currentEmail = email;
+
+      try {
+        const res = await fetch(`${API_BASE}/forgot-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        if (res.ok) {
+          hideAll();
+          document.getElementById('resetEmail').value = currentEmail;
+          document.getElementById('resetForm').classList.remove('hidden');
+          alert('OTP sent to your email.');
+        } else {
+          const data = await res.json();
+          document.getElementById('message').innerText = data.error || 'Failed to send OTP';
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('message').innerText = 'Request failed: ' + err.message;
+      }
+    }
+
+    async function handleReset(e) {
+      e.preventDefault();
+      const email = document.getElementById('resetEmail').value;
+      const otp = document.getElementById('resetOtp').value;
+      const new_password = document.getElementById('resetPass').value;
+
+      try {
+        const res = await fetch(`${API_BASE}/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp, new_password })
+        });
+        if (res.ok) {
+          alert('Password reset successful! Please login.');
+          showLogin();
+        } else {
+          const data = await res.json();
+          document.getElementById('message').innerText = data.error || 'Reset failed';
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('message').innerText = 'Request failed: ' + err.message;
+      }
+    }
+  </script>
+</body>
+
+</html>
