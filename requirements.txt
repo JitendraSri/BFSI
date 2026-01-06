@@ -10,3 +10,6 @@ google-generativeai
 scikit-learn
 joblib
 openpyxl
+flask-caching
+flask-compress
+certifi
