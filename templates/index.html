@@ -15,16 +15,16 @@
 
   <!-- 1. HERO SECTION -->
   <div class="hero">
-    <div class="hero-content">
-      <h1>AI-Powered BFSI Intelligence Platform</h1>
-      <p style="font-size: 1.3rem; line-height: 1.6; color: #ccc;">
+    <div class="hero-content fade-up">
+      <h1 class="delay-1">AI-Powered BFSI Intelligence Platform</h1>
+      <p class="delay-2" style="font-size: 1.3rem; line-height: 1.6; color: #ccc;">
         Real-time fraud detection, risk prediction, and financial intelligence using advanced Machine Learning.
         Secure your transactions with the power of AI.
       </p>
 
 
 
-      <div class="hero-btns">
+      <div class="hero-btns delay-3">
         <a href="auth.html" class="btn btn-large">Login</a>
         <a href="auth.html" class="btn btn-outline btn-large">Create Free Account</a>
       </div>
@@ -32,7 +32,7 @@
   </div>
 
   <!-- 2. FEATURES SECTION -->
-  <section id="features">
+  <section id="features" class="reveal">
     <h2 class="section-title">Why Choose <span>BFSI Intelligence</span>?</h2>
 
     <div class="features-grid">
@@ -75,7 +75,7 @@
   </section>
 
   <!-- 3. HOW IT WORKS -->
-  <section id="how-it-works" style="background: rgba(0,0,0,0.2);">
+  <section id="how-it-works" class="reveal" style="background: rgba(0,0,0,0.2);">
     <h2 class="section-title">How It <span>Works</span></h2>
 
     <div class="timeline">
@@ -106,7 +106,7 @@
   </section>
 
   <!-- 4. WHO SHOULD USE THIS -->
-  <section id="audience">
+  <section id="audience" class="reveal">
     <h2 class="section-title">Who Should Use <span>This?</span></h2>
     <div class="audience-list">
       <div class="audience-tag">🏦 Banks & Credit Unions</div>
@@ -119,7 +119,7 @@
   </section>
 
   <!-- 5. CTA SECTION -->
-  <div class="cta-section">
+  <div class="cta-section cta-pulse reveal">
     <h2>Start Protecting Your Transactions Today</h2>
     <p style="margin: 1.5rem 0 2.5rem; color: #ddd; font-size: 1.1rem;">
       Join thousands of financial institutions using BFSI Intelligence to secure their future.
@@ -134,8 +134,27 @@
     &copy; 2025 BFSI Intelligence Platform. All rights reserved.
   </footer>
 
-  <!-- Curved Background Animation -->
-  <script src="/static/js/curved-bg.js"></script>
+  <!-- Scroll Observer Script -->
+  <script>
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('show');
+          // Once shown, we can unobserve if we only want it to happen once
+          // observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.reveal, .fade-up').forEach(el => {
+      observer.observe(el);
+    });
+  </script>
 
 </body>
 

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
     /* Primary Colors */
     --primary: #4e54c8;
@@ -38,10 +40,12 @@
     --container-max: 1280px;
 
     /* Typography */
+    --font-font-main: 'Inter', system-ui, -apple-system, sans-serif;
     --font-size-base: 1rem;
-    --font-heading-xl: clamp(2rem, 5vw, 3rem);
+    --font-heading-xl: clamp(2rem, 5vw, 3.5rem);
     --font-heading-lg: clamp(1.5rem, 4vw, 2.5rem);
     --font-heading-md: clamp(1.2rem, 3vw, 1.8rem);
+    --letter-spacing-heading: 0.02em;
 }
 
 /* Light Mode Overrides (Optional) */
@@ -89,12 +93,13 @@ section,
 
 body {
     margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-font-main);
     background: var(--bg-body);
     color: var(--text-main);
     min-height: 100vh;
     transition: background 0.3s, color 0.3s;
     overflow-x: hidden;
+    line-height: 1.5;
 }
 
 /* Glassmorphism Classes */
@@ -383,12 +388,11 @@ textarea:focus {
 
 h1,
 h2,
-h1,
-h2,
 h3 {
     margin-top: 0;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    /* Subtle depth */
+    letter-spacing: var(--letter-spacing-heading);
+    font-weight: 700;
 }
 
 /* Utility */
@@ -414,9 +418,11 @@ h3 {
 
 /* Hero Section */
 .hero {
-    min-height: 90vh;
-    padding: 4rem 2rem;
-    background: linear-gradient(135deg, var(--primary), #30336b);
+    min-height: 100vh;
+    padding: var(--spacing-xl);
+    background: linear-gradient(-45deg, var(--primary), #30336b, #1a1a2e, var(--secondary));
+    background-size: 400% 400%;
+    animation: gradientMove 15s ease infinite;
     position: relative;
     overflow: hidden;
     display: flex;
@@ -424,6 +430,20 @@ h3 {
     justify-content: center;
     align-items: center;
     text-align: center;
+}
+
+@keyframes gradientMove {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 .hero::before {
@@ -458,6 +478,30 @@ h3 {
     z-index: 1;
     max-width: 800px;
     margin: 0 auto;
+}
+
+/* Animations */
+.fade-up {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.fade-up.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.delay-1 {
+    transition-delay: 0.2s;
+}
+
+.delay-2 {
+    transition-delay: 0.4s;
+}
+
+.delay-3 {
+    transition-delay: 0.6s;
 }
 
 .hero h1 {
@@ -518,16 +562,36 @@ section {
 
 .feature-card {
     padding: 2.5rem;
-    transition: transform 0.3s, background 0.3s;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        background 0.3s,
+        box-shadow 0.3s;
     text-align: center;
 }
 
 .feature-card:hover {
-    transform: translateY(-10px);
-    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-12px) scale(1.02);
+    background: rgba(255, 255, 255, 0.1);
     border-color: var(--secondary);
-    box-shadow: 0 0 20px rgba(143, 148, 251, 0.3);
-    /* Card Glow */
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(143, 148, 251, 0.2);
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(143, 148, 251, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+}
+
+.feature-card:hover::before {
+    opacity: 1;
 }
 
 .feature-icon {
@@ -551,19 +615,45 @@ section {
     text-align: center;
     position: relative;
     min-width: 200px;
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: all 0.6s ease-out;
+}
+
+.reveal.show .step {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.step:nth-child(1) {
+    transition-delay: 0.1s;
+}
+
+.step:nth-child(3) {
+    transition-delay: 0.3s;
+}
+
+/* Adjusting for &rarr; divs */
+.step:nth-child(5) {
+    transition-delay: 0.5s;
+}
+
+.step:nth-child(7) {
+    transition-delay: 0.7s;
 }
 
 .step-num {
-    width: 50px;
-    height: 50px;
-    background: var(--primary);
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     border-radius: 50%;
-    margin: 0 auto 1rem;
+    margin: 0 auto 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
     font-weight: bold;
+    box-shadow: 0 4px 15px rgba(78, 84, 200, 0.4);
 }
 
 /* Audience */
