@@ -511,8 +511,11 @@ def train_model():
             return {"status": "error", "message": "No data available"}
 
         # Preprocessing
-        # Fill missing
-        df.fillna(0, inplace=True)
+        # Fill missing values with median/mode instead of just 0
+        df['transaction_amount'] = df['transaction_amount'].fillna(df['transaction_amount'].median())
+        df['account_age_days'] = df['account_age_days'].fillna(df['account_age_days'].median())
+        df['kyc_verified'] = df['kyc_verified'].fillna(0)
+        df['channel'] = df['channel'].fillna('Unknown')
 
         # Encode Channel
         le = LabelEncoder()
@@ -522,8 +525,8 @@ def train_model():
         X = df[['transaction_amount', 'channel', 'account_age_days', 'kyc_verified']]
         y = df['is_fraud']
 
-        # Train Test Split
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        # Train Test Split with Stratification
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
         # Model
         clf = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
@@ -534,10 +537,10 @@ def train_model():
         accuracy = accuracy_score(y_test, y_pred)
         report = classification_report(y_test, y_pred, output_dict=True)
         
-        # Extract metrics
-        precision = report['1']['precision']
-        recall = report['1']['recall']
-        f1 = report['1']['f1-score']
+        # Extract metrics safely
+        precision = report.get('1', {}).get('precision', 0.0)
+        recall = report.get('1', {}).get('recall', 0.0)
+        f1 = report.get('1', {}).get('f1-score', 0.0)
         
         logger.info(f"Model trained. Accuracy: {accuracy:.2f}, F1: {f1:.2f}")
 
@@ -1210,6 +1213,9 @@ def upload_csv():
         else:
             inserted_count = 0
             
+        # Invalidate dashboard cache
+        cache.delete(f"dashboard_v2:{user_id}")
+            
         # track upload
         db.file_uploads.insert_one({
             'user_id': user_id,
@@ -1341,32 +1347,6 @@ def get_dashboard_data():
         # 2. Counts
         total_txns = db.transactions.count_documents({'user_id': user_id})
         
-        # --- AUTO-SEED IF EMPTY ---
-        if total_txns == 0:
-            logger.info(f"Auto-seeding demo data for empty user: {user_id}")
-            channels = ['Mobile App', 'Web', 'ATM', 'POS']
-            types = ['Transfer', 'Payment', 'Withdrawal']
-            base_time = datetime.datetime.now()
-            demo_txns = []
-            for i in range(25):
-                txn_id = f"demo_{uuid.uuid4().hex[:8]}"
-                days_ago = random.randint(0, 30)
-                amount = random.uniform(1000, 50000)
-                is_fraud = 1 if i % 12 == 0 else 0 
-                demo_txns.append({
-                    'transaction_id': txn_id,
-                    'user_id': user_id,
-                    'transaction_amount': round(amount, 2),
-                    'channel': random.choice(channels),
-                    'transaction_type': random.choice(types),
-                    'is_fraud': is_fraud,
-                    'timestamp': base_time - timedelta(days=days_ago),
-                    'created_at': datetime.datetime.now()
-                })
-            if demo_txns:
-                db.transactions.insert_many(demo_txns)
-                total_txns = 25 # Update count
-        
         suspicious_activity = db.transactions.count_documents({'user_id': user_id, 'is_fraud': 1})
         pending_verifications = 1 if user.get('kyc_status', 'Pending') != 'Verified' else 0
         
@@ -1376,8 +1356,8 @@ def get_dashboard_data():
             'pending_verifications': pending_verifications
         }
 
-        # 3. Chart Data (Last 30 days)
-        thirty_days_ago = datetime.datetime.now() - timedelta(days=30)
+        # 3. Chart Data (Last 365 days)
+        thirty_days_ago = datetime.datetime.now() - timedelta(days=365)
         pipeline = [
             {
                 '$match': {
@@ -1932,6 +1912,8 @@ def seed_database():
                 'channel': random.choice(channels),
                 'transaction_type': random.choice(types),
                 'is_fraud': is_fraud,
+                'kyc_verified': random.choice([0, 1]),
+                'account_age_days': random.randint(10, 1000),
                 'timestamp': base_time - timedelta(days=days_ago),
                 'created_at': datetime.datetime.now()
             }
