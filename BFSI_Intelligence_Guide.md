@@ -85,6 +85,40 @@ Manage your identity:
 
 ---
 
+## 10. 🔌 API Reference (For Developers)
+For those interested in the technical side, here are the key API endpoints that power the platform.
+
+### 🔐 Authentication & Identity
+*   `POST /register`: Create a new user account.
+*   `POST /login`: Authenticate and receive a secure token.
+*   `POST /verify-registration`: Verify account using the email OTP.
+*   `POST /forgot-password`: Request a password reset OTP.
+*   `POST /reset-password`: Update password using a valid OTP.
+
+### 📥 Data & Transactions
+*   `POST /upload`: Upload CSV/Excel statements or scan images/PDFs with AI.
+*   `GET /get-transactions`: Retrieve a history of all processed transactions.
+*   `POST /analyze-transaction`: Get detailed AI risk analysis for a specific transaction.
+*   `DELETE /delete-transaction/<id>`: Remove a specific transaction record.
+
+### 🧠 AI & Analytics
+*   `POST /predict-fraud`: Simulate a transaction to check its fraud probability.
+*   `POST /chat-advisor`: Interact with **Cortex**, the AI financial advisor.
+*   `GET /metrics`: View technical performance data of the ML model.
+*   `GET /get-model-tips`: Get AI-generated recommendations for improving detection accuracy.
+
+### 💰 Financial Modules
+*   `POST /transfer`: Securely move funds between accounts.
+*   `POST /handle-investments`: Add or manage your investment portfolio.
+*   `POST /analyze-portfolio`: Get personalized AI advice for your portfolio.
+*   `POST /apply-loan`: Submit applications for various loan products.
+
+### ⚙️ System Tools
+*   `GET /test-atlas`: Verify connection to the MongoDB database.
+*   `GET /test_db`: Basic database connectivity check.
+
+---
+
 ## 💡 Pro Tip for Beginners
 If your dashboard looks empty, go to the **Upload** page and try uploading a sample CSV or even a photo of a receipt. The platform comes alive as soon as it has data to analyze!
 

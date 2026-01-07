@@ -2303,3 +2303,4 @@ if __name__ == '__main__':
         print("Starting BFSI Backend Server (Optimized Mode)...")
         # debug=False for maximum speed. threaded=True for concurrency.
         app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True)
+        

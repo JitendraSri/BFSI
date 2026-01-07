@@ -122,3 +122,28 @@ Please retry in 21.260716518s. [links {
 2026-01-06 16:46:32,543 INFO Generated OTP for talabattulajitendrasri@gmail.com: 225300
 2026-01-06 16:46:35,831 INFO OTP sent successfully to talabattulajitendrasri@gmail.com
 2026-01-06 16:46:56,943 INFO Auto-seeding demo data for empty user: 53a6ace8-5b4c-4196-88f2-fb71b7cc9d75
+2026-01-07 21:55:13,356 INFO Generated OTP for purni20078@gmail.com: 942879
+2026-01-07 21:55:17,419 INFO OTP sent successfully to purni20078@gmail.com
+2026-01-07 21:55:54,756 INFO Auto-seeding demo data for empty user: 6e9e5530-2c7c-4520-9034-95a70105636e
+2026-01-07 21:58:35,019 INFO Starting model training...
+2026-01-07 21:58:37,213 INFO Model trained. Accuracy: 0.76, F1: 0.00
+2026-01-07 21:58:39,934 INFO Starting model training...
+2026-01-07 21:58:40,839 INFO Starting model training...
+2026-01-07 21:58:42,090 INFO Model trained. Accuracy: 0.76, F1: 0.00
+2026-01-07 21:58:42,950 INFO Model trained. Accuracy: 0.76, F1: 0.00
+2026-01-07 22:04:55,846 INFO Generated OTP for jitendrasri2005@gmail.com: 853447
+2026-01-07 22:04:59,940 INFO OTP sent successfully to jitendrasri2005@gmail.com
+2026-01-07 22:05:53,742 INFO Auto-seeding demo data for empty user: 0972ff14-ccef-4fad-8c93-c13974128128
+2026-01-07 22:13:37,060 INFO Starting model training...
+2026-01-07 22:13:43,285 INFO Model trained. Accuracy: 0.76, F1: 0.00
+2026-01-07 22:57:38,599 INFO Starting model training...
+2026-01-07 22:57:39,998 INFO Model trained. Accuracy: 0.86, F1: 0.00
+2026-01-07 22:59:28,305 INFO Starting model training...
+2026-01-07 22:59:29,819 INFO Model trained. Accuracy: 0.91, F1: 0.86
+2026-01-07 23:18:52,569 INFO Generated OTP for karripurnima730@gmail.com: 100632
+2026-01-07 23:18:54,524 INFO OTP sent successfully to karripurnima730@gmail.com
+2026-01-07 23:21:47,442 INFO Generated OTP for karrishanthi1989@gmail.com: 820413
+2026-01-07 23:21:49,299 INFO OTP sent successfully to karrishanthi1989@gmail.com
+2026-01-07 23:22:58,803 INFO Auto-seeding demo data for empty user: 3c0de957-3cd0-4c7a-ac68-0436527e4bdc
+2026-01-08 00:15:06,910 INFO OTP sent successfully to purni20078@gmail.com
+2026-01-08 00:15:08,884 INFO OTP sent successfully to purni20078@gmail.com
