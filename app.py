@@ -70,6 +70,7 @@ def ensure_dirs():
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     os.makedirs(os.path.join(os.path.dirname(__file__), 'assets', 'uploads'), exist_ok=True)
     os.makedirs(os.path.join(os.path.dirname(__file__), 'assets', 'uploads', 'profiles'), exist_ok=True)
+    os.makedirs(os.path.join(os.path.dirname(__file__), 'uploads', 'profiles'), exist_ok=True)
     os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
 
 def get_logger(name='bfsi'):
@@ -528,8 +529,15 @@ def train_model():
         # Train Test Split with Stratification
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-        # Model
-        clf = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
+        # Model - Use balanced class weights and more estimators
+        # Stratified split ensures fraud cases are in both sets
+        clf = RandomForestClassifier(
+            n_estimators=200, 
+            class_weight='balanced_subsample', 
+            random_state=42,
+            max_depth=10,
+            min_samples_split=5
+        )
         clf.fit(X_train, y_train)
 
         # Evaluation
@@ -537,12 +545,14 @@ def train_model():
         accuracy = accuracy_score(y_test, y_pred)
         report = classification_report(y_test, y_pred, output_dict=True)
         
-        # Extract metrics safely
-        precision = report.get('1', {}).get('precision', 0.0)
-        recall = report.get('1', {}).get('recall', 0.0)
-        f1 = report.get('1', {}).get('f1-score', 0.0)
+        # Extract metrics safely - Use Weighted Average for better overall visibility
+        precision = report.get('weighted avg', {}).get('precision', 0.0)
+        recall = report.get('weighted avg', {}).get('recall', 0.0)
+        f1 = report.get('weighted avg', {}).get('f1-score', 0.0)
         
-        logger.info(f"Model trained. Accuracy: {accuracy:.2f}, F1: {f1:.2f}")
+        # Log class-specific metrics for debugging
+        fraud_f1 = report.get('1', {}).get('f1-score', 0.0)
+        logger.info(f"Model trained. Accuracy: {accuracy:.2f}, Weighted F1: {f1:.2f}, Fraud F1: {fraud_f1:.2f}")
 
         # Save Artifacts
         os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
@@ -567,7 +577,9 @@ def train_model():
         }
 
     except Exception as e:
-        logger.error(f"Training failed: {e}")
+        logger.error(f"Training failed with exception: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return {"status": "error", "message": str(e)}
 
 # ==========================================
@@ -1708,28 +1720,26 @@ def upload_profile_image():
         if file_ext not in allowed_extensions:
             return jsonify({'error': 'Invalid file type. Allowed: PNG, JPG, JPEG, GIF, WEBP'}), 400
         
+        # New: Store as File
+        filename = f"{user_id}_{int(time.time())}.{file_ext}"
         upload_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'profiles')
-        # os.makedirs(upload_dir, exist_ok=True) # Not needed for DB storage
+        os.makedirs(upload_dir, exist_ok=True)
         
-        # Read file data
-        file_data = file.read()
+        file_path = os.path.join(upload_dir, filename)
+        file.save(file_path)
         
-        # Encode to Base64
-        base64_data = base64.b64encode(file_data).decode('utf-8')
-        
-        # Create Data URI (e.g., data:image/png;base64,...)
-        mime_type = file.mimetype or f'image/{file_ext}'
-        profile_image_data_uri = f"data:{mime_type};base64,{base64_data}"
+        # Relative URL for frontend access
+        profile_image_url = f"/uploads/profiles/{filename}"
         
         db = get_db()
         db.users.update_one(
             {'user_id': user_id},
-            {'$set': {'profile_image': profile_image_data_uri}}
+            {'$set': {'profile_image': profile_image_url}}
         )
         
         return jsonify({
-            'profile_image': profile_image_data_uri,
-            'message': 'Profile image uploaded successfully (stored in DB)'
+            'profile_image': profile_image_url,
+            'message': 'Profile image uploaded successfully (stored as file)'
         })
     except Exception as e:
         import traceback
@@ -1785,20 +1795,24 @@ def predict_fraud():
 @app.route('/api/retrain', methods=['POST'])
 @auth_required
 def retrain_model():
+    logger.info(f"Retrain requested by user: {request.user.get('email')}")
     try:
         result = train_model()
         
         if result.get('status') == 'error':
+            logger.error(f"Retrain result error: {result.get('message')}")
             return jsonify({'error': result.get('message', 'Training failed')}), 500
         
         load_ml_model()
         
+        logger.info(f"Retrain successful. Metrics: {result.get('metrics', {})}")
         return jsonify({
             'status': 'success',
             'message': 'Model training completed',
             'metrics': result.get('metrics', {})
         })
     except Exception as e:
+        logger.error(f"Retrain API exception: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': 'Training failed', 'detail': str(e)}), 500
@@ -2300,7 +2314,7 @@ if __name__ == '__main__':
         setup_demo_data()
         
     if args.server:
-        print("Starting BFSI Backend Server (Optimized Mode)...")
-        # debug=False for maximum speed. threaded=True for concurrency.
-        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True)
+        print("Starting BFSI Backend Server (Debug Mode)...")
+        # Enabled debug and reloader to pick up changes
+        app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=True, threaded=True)
         

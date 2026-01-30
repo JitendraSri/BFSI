@@ -157,6 +157,8 @@
         // If it's a relative path (legacy), prepend API_BASE
         if (user.profile_image.startsWith('data:')) {
           avatarImg.src = user.profile_image;
+        } else if (user.profile_image.startsWith('/uploads/')) {
+          avatarImg.src = API_BASE + user.profile_image;
         } else {
           avatarImg.src = API_BASE + user.profile_image;
         }
@@ -226,10 +228,19 @@
             avatarText.style.display = 'none';
           }
 
-          // Update user in localStorage
+          // Update user in localStorage (Prune large data to avoid QuotaExceededError)
           const user = JSON.parse(localStorage.getItem('user') || '{}');
           user.profile_image = data.profile_image;
-          localStorage.setItem('user', JSON.stringify(user));
+          
+          // CRITICAL: If image is still base64 and large, skip storing it in localStorage
+          if (user.profile_image && user.profile_image.length > 100000) {
+            console.warn('Profile image too large for localStorage, skipping cache.');
+            const prunedUser = { ...user };
+            delete prunedUser.profile_image;
+            localStorage.setItem('user', JSON.stringify(prunedUser));
+          } else {
+            localStorage.setItem('user', JSON.stringify(user));
+          }
         } else {
           document.getElementById('msgArea').innerHTML = '<span style="color:red">Error: ' + (data.error || data.detail || 'Failed to upload') + '</span>';
         }

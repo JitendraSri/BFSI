@@ -67,15 +67,15 @@
       </div>
       <div class="glass card metric-card">
         <div class="metric-val" id="f1">-</div>
-        <div class="metric-label">F1 Score</div>
+        <div class="metric-label">Weighted F1 Score</div>
       </div>
       <div class="glass card metric-card">
         <div class="metric-val" id="prec">-</div>
-        <div class="metric-label">Precision</div>
+        <div class="metric-label">Overall Precision</div>
       </div>
       <div class="glass card metric-card">
         <div class="metric-val" id="rec">-</div>
-        <div class="metric-label">Recall</div>
+        <div class="metric-label">Overall Recall</div>
       </div>
     </div>
 
@@ -91,18 +91,25 @@
       <div class="chart-container">
         <canvas id="metricsChart"></canvas>
       </div>
-      <button class="btn" style="background:#f39c12; margin-top:10px; width:100%" onclick="loadTips()">💡 Get AI
+      <button class="btn" style="background:#f39c12; margin-top:10px; width:100%"
+        onclick="loadTips('metricsTipsArea', this)">💡 Get AI
         Improvement Tips</button>
-      <div id="tipsArea" class="tips-box" style="display:none;">Loading tips...</div>
+      <div id="metricsTipsArea" class="tips-box" style="display:none;">Loading tips...</div>
     </div>
 
     <div class="glass card mt-2">
-      <h2>AI Strategic Analysis</h2>
+      <div class="flex" style="justify-content: space-between; align-items: center;">
+        <h2>AI Strategic Analysis</h2>
+        <a href="predictive.html" class="btn"
+          style="background: var(--primary); text-decoration: none; font-size: 0.8rem; padding: 5px 10px;">🔄 Training
+          Lab</a>
+      </div>
       <p style="color: #aaa; margin-bottom: 1rem;">Get AI-powered recommendations to improve your fraud detection model
         performance.</p>
-      <button class="btn" style="background:#f39c12; margin-bottom:10px;" onclick="loadTips()">💡 Ask AI for Improvement
+      <button class="btn" style="background:#f39c12; margin-bottom:10px;"
+        onclick="loadTips('strategyTipsArea', this)">💡 Ask AI for Improvement
         Strategy</button>
-      <div id="tipsArea" class="tips-box" style="display:none;">Click the button above to generate AI-powered
+      <div id="strategyTipsArea" class="tips-box" style="display:none;">Click the button above to generate AI-powered
         improvement strategies.</div>
     </div>
 
@@ -169,7 +176,7 @@
             data: {
               labels: ['Accuracy', 'Precision', 'Recall', 'F1 Score'],
               datasets: [{
-                label: 'Current Model Performance',
+                label: 'Overall Model Performance (Weighted)',
                 data: [data.accuracy, data.precision, data.recall, data.f1_score],
                 backgroundColor: 'rgba(46, 204, 113, 0.2)',
                 borderColor: '#2ecc71',
@@ -252,19 +259,17 @@
       } catch (e) { console.error(e); }
     }
 
-    async function loadTips() {
-      const el = document.getElementById('tipsArea');
-      const button = document.querySelector('button[onclick="loadTips()"]');
+    async function loadTips(targetId, btn) {
+      const el = document.getElementById(targetId);
+      const originalHtml = btn.innerHTML;
 
       // Show loading state
       el.style.display = 'block';
       el.innerHTML = '<div style="text-align: center; padding: 1rem;"><i class="fas fa-spinner fa-spin"></i> Analyzing Model Metrics with AI...</div>';
 
       // Disable button during request
-      if (button) {
-        button.disabled = true;
-        button.innerHTML = '⏳ Analyzing...';
-      }
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Analyzing...';
 
       try {
         const res = await fetch(API_BASE + '/api/model-tips', {
@@ -278,8 +283,9 @@
             .replace(/\n\n/g, '</p><p>')
             .replace(/\n/g, '<br>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/^(.+)$/, '<p>$1</p>');
+            .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+          if (!formattedTips.startsWith('<p>')) formattedTips = '<p>' + formattedTips + '</p>';
 
           el.innerHTML = '<h3 style="margin-top: 0; color: #2ecc71;">💡 AI Strategic Analysis</h3>' + formattedTips;
         } else {
@@ -290,10 +296,8 @@
         el.innerHTML = '<div style="color: #e74c3c;"><strong>Error:</strong> Failed to load AI analysis. Please check your connection and try again.</div>';
       } finally {
         // Re-enable button
-        if (button) {
-          button.disabled = false;
-          button.innerHTML = '💡 Get AI Improvement Tips';
-        }
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
       }
     }
 
