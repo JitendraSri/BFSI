@@ -703,7 +703,7 @@ except Exception as e:
     db = None
 
 
-db = client[DB_NAME]
+db = client[DB_NAME] if client else None
 
 @app.route('/test-atlas', methods=['GET'])
 def test_atlas():

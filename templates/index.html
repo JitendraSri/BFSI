@@ -6,30 +6,119 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BFSI Intelligence - AI-Powered Financial Security</title>
   <link rel="stylesheet" href="/static/css/styles.css?v=4">
+  <link rel="stylesheet" href="/static/css/hero.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
 </head>
 
 <body>
   <script src="/static/js/navbar.js?v=2"></script>
+  <script src="/static/js/hero.js" defer></script>
 
   <!-- 1. HERO SECTION -->
-  <div class="hero">
-    <div class="hero-content fade-up">
-      <h1 class="delay-1">AI-Powered BFSI Intelligence Platform</h1>
-      <p class="delay-2" style="font-size: 1.3rem; line-height: 1.6; color: #ccc;">
-        Real-time fraud detection, risk prediction, and financial intelligence using advanced Machine Learning.
-        Secure your transactions with the power of AI.
-      </p>
+  <section class="hero-saas">
+    <!-- Background Effects -->
+    <div class="hero-bg-effects">
+      <div class="hero-mesh"></div>
+      <div class="hero-noise"></div>
+      <div class="hero-orb orb-1"></div>
+      <div class="hero-orb orb-2"></div>
+    </div>
+    <div class="cursor-light"></div>
 
+    <div class="hero-container">
+      <!-- LEFT COLUMN -->
+      <div class="hero-left">
+        <h1 class="hero-headline">
+          Predict Financial Fraud<br>
+          <span class="text-gradient">Before It Happens</span>
+        </h1>
+        <p class="hero-description">
+          Detect fraudulent transactions in real time using advanced Machine Learning, behavioral analytics, anomaly detection and AI-powered financial intelligence.
+        </p>
+        
+        <div class="hero-cta">
+          <a href="auth.html" class="btn-premium btn-primary">Start Free Trial</a>
+          <a href="#how-it-works" class="btn-premium btn-secondary">Watch Demo</a>
+        </div>
 
+        <div class="hero-trust">
+          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> AI Powered</div>
+          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> Enterprise Security</div>
+          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> ISO Ready</div>
+          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> Real-time Monitoring</div>
+        </div>
+      </div>
 
-      <div class="hero-btns delay-3">
-        <a href="auth.html" class="btn btn-large">Login</a>
-        <a href="auth.html" class="btn btn-outline btn-large">Create Free Account</a>
+      <!-- RIGHT COLUMN -->
+      <div class="hero-right">
+        <div class="dashboard-wrapper">
+          <!-- Main Dashboard Panel -->
+          <div class="glass-panel main-dash">
+            <div class="dash-header">
+              <div class="dash-title">AI Transaction Monitoring</div>
+              <div class="dash-status"><i class="fas fa-signal" style="color: #00D4FF;"></i></div>
+            </div>
+
+            <div class="dash-stats-grid">
+              <div class="mini-stat">
+                <div class="mini-stat-label">Accuracy</div>
+                <div class="mini-stat-value text-success"><span class="animate-counter" data-target="98.7" data-float="true">0</span>%</div>
+              </div>
+              <div class="mini-stat">
+                <div class="mini-stat-label">Protected</div>
+                <div class="mini-stat-value text-success">$<span class="animate-counter" data-target="4.8" data-float="true">0</span>B</div>
+              </div>
+            </div>
+
+            <!-- Network Visualization -->
+            <div class="network-viz">
+              <div class="connection conn-1"></div>
+              <div class="connection conn-2"></div>
+              <div class="connection conn-3"></div>
+              <div class="connection conn-4"></div>
+              
+              <div class="node node-center"></div>
+              <div class="node node-1"></div>
+              <div class="node node-2"></div>
+              <div class="node node-3"></div>
+              <div class="node node-4"></div>
+            </div>
+          </div>
+
+          <!-- Floating Risk Score Gauge -->
+          <div class="glass-panel float-card-1">
+            <div class="gauge-circle">
+              <span>94</span>
+            </div>
+            <div style="font-size: 0.8rem; color: #ccc; font-weight: 600;">Risk Score</div>
+          </div>
+
+          <!-- Floating Alerts -->
+          <div class="glass-panel float-card-2">
+            <div class="alert-header">
+              <span><i class="fas fa-exclamation-triangle"></i> Fraud Alert Detected</span>
+              <span>Just now</span>
+            </div>
+            <div class="alert-body">
+              <div class="feed-row">
+                <span>TXN-9842</span>
+                <span class="text-danger">Blocked</span>
+              </div>
+              <div class="feed-row">
+                <span>TXN-9841</span>
+                <span class="text-success">Verified</span>
+              </div>
+              <div class="feed-row">
+                <span>TXN-9840</span>
+                <span class="text-success">Verified</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- 2. FEATURES SECTION -->
   <section id="features" class="reveal">

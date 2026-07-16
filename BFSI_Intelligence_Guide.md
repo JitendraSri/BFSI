@@ -1,126 +1,119 @@
-# 🏦 BFSI Intelligence Platform: The Complete Guide
+# 🏦 BFSI Intelligence Platform: The Complete Guide & Technical Architecture
 
-Welcome to **BFSI Intelligence**, your all-in-one AI-powered financial security and intelligence platform. This guide is designed to help you navigate and master every feature of the website, from your first login to advanced AI risk analysis.
-
----
-
-## 1. 🚀 The Landing Page (The Entry Point)
-The landing page is your introduction to the platform. It highlights:
-*   **AI Fraud Detection**: Our core technology that keeps your money safe.
-*   **Risk Scoring**: How we categorize transactions into High, Medium, and Low risk.
-*   **Unified Dashboard**: A quick overview of what to expect inside.
-
-**How to get started:**
-1.  Click **"Create Free Account"** or **"Login"** to enter the secure zone.
+Welcome to **BFSI Intelligence**, your all-in-one AI-powered financial security and intelligence platform. This comprehensive guide outlines the features, the underlying technology stack, and the complex machine learning algorithms that drive our enterprise-grade fraud detection system.
 
 ---
 
-## 2. 🔐 Authentication & Security
-We take your security seriously. 
-*   **Registration**: Sign up with your email and a strong password.
-*   **OTP Verification**: To ensure it's really you, we send a 6-digit **One Time Password (OTP)** to your email during registration and password resets.
-*   **Logout**: Always remember to log out when using public devices via the sidebar menu.
+## 🛠️ Complete Technology Stack
+
+The platform is built on a highly optimized, modern technology stack designed for performance, security, and scalability.
+
+### Frontend Architecture (Client-Side)
+*   **Core Structure**: Semantic **HTML5**.
+*   **Styling**: **Modern Vanilla CSS3**. We intentionally avoided frameworks like React, Tailwind, or Bootstrap to ensure zero bloat and maximum rendering performance.
+*   **Design System**: Premium Enterprise SaaS UI featuring Glassmorphism, 3D CSS parallax effects, animated mesh gradients (`#050816` deep navy theme), and hardware-accelerated 60 FPS CSS animations.
+*   **Interactivity**: **Vanilla JavaScript (ES6+)**. Utilizes modern browser APIs like `IntersectionObserver` for scroll animations, custom event listeners for interactive 3D mock dashboards, and the `Fetch API` for asynchronous backend communication.
+
+### Backend Architecture (Server-Side)
+*   **Language**: **Python 3.x**.
+*   **Framework**: **Flask** (Micro-framework chosen for lightweight, fast API routing).
+*   **Database**: **MongoDB (Atlas Cloud)**. A NoSQL database used for storing unstructured user data, transaction logs, and dynamic risk scores.
+*   **Security & Auth**: Custom session/JWT management. Email-based **OTP (One-Time Password) Verification** powered by SMTP.
+
+### AI & Machine Learning Stack
+*   **Machine Learning**: **Scikit-Learn** (Algorithms, Metrics), **Pandas** (Data manipulation), **NumPy** (Numerical operations), **Joblib** (Model serialization).
+*   **Generative AI**: **Google Gemini Pro API**. Integrated via a custom `GenAIService` class for OCR, unstructured document parsing, and the interactive 'Cortex' AI financial advisor.
 
 ---
 
-## 3. 📊 The Hub: Unified Dashboard
-Once you log in, you land on the **Dashboard**. This is your cockpit for financial monitoring.
-*   **Total Balance**: Your current account standing.
-*   **Trust Score**: A dynamic score (0-100) that reflects your account's health and security level.
-*   **Charts**: 
-    *   **Transaction Volume**: See your spending trends over the last year.
-    *   **Income vs Expense**: A side-by-side comparison of your money flow.
-    *   **Spending Categories**: A donut chart showing where your money goes (UPI, Card, etc.).
-*   **Recent Alerts**: A quick list of the latest suspicious activities flagged by AI.
+## 🧠 Core Algorithms & Intelligence Models
+
+The BFSI Intelligence platform relies on three distinct algorithmic pipelines to ensure total financial security:
+
+### 1. The Fraud Detection Algorithm (Random Forest)
+At the heart of the platform is a supervised machine learning model built using the **RandomForestClassifier**.
+*   **How it works**: It operates as an ensemble of numerous decision trees. Each tree makes a prediction on whether a transaction is fraudulent based on historical data. The forest then "votes" on the final outcome, drastically reducing overfitting compared to a single decision tree.
+*   **Features Analyzed**: The algorithm analyzes continuous and categorical variables such as Transaction Amount, Payment Channel (UPI, Credit, NetBanking), Account Age, and KYC Status.
+*   **Output**: It outputs a probabilistic risk score, classifying the transaction into 🔴 **High**, 🟡 **Medium**, or 🟢 **Low** risk.
+
+### 2. Generative OCR & Parsing Pipeline (Gemini)
+When users upload receipts (Images) or Bank Statements (PDFs), traditional OCR often fails at extracting relational data. 
+*   **How it works**: We pass the raw document securely to the **Google Gemini multimodal LLM**. By using highly engineered prompt constraints, the LLM acts as an intelligent parser, extracting dates, merchants, and amounts, and structuring them strictly into machine-readable JSON format for our database.
+
+### 3. Dynamic Trust Scoring Algorithm
+Every user is assigned a Trust Score (0-100).
+*   **How it works**: A deterministic weighted algorithm calculates this score dynamically. It rewards positive behaviors (e.g., fully verified KYC, consistent safe transactions) and penalizes risky behaviors (e.g., recent flagged anomalies, rapid sequential high-value transfers). 
 
 ---
 
-## 4. 📥 Data Ingestion: Data Upload
-The platform needs data to protect you. You can ingest data in three ways:
-1.  **CSV/Excel**: Upload your bank statements directly.
-2.  **AI Document Analysis**: Upload an **Image (.jpg, .png)** or **PDF** of a transaction receipt. Our AI (Cortex) will "read" the text and automatically extract the transactions for you!
-3.  **Real-time Processing**: Transactions are instantly processed and assigned a fraud risk score.
+## 🚀 Platform Features & User Guide
+
+### 1. The Entry Point (Premium Hero Section)
+*   **Visuals**: Features a CSS-only 3D mock dashboard, live particle nodes, glowing network connections, and responsive typography.
+*   **Action**: Click **"Start Free Trial"** or **"Login"** to enter the secure zone.
+
+### 2. 🔐 Authentication & Security
+*   **Registration**: Sign up with email and password.
+*   **OTP Verification**: Receive a 6-digit OTP via email to verify identity during sign-up or password resets.
+*   **Session Management**: Secure, timeout-based sessions that require re-authentication for sensitive actions.
+
+### 3. 📊 The Hub: Unified Dashboard
+Your central cockpit for financial monitoring.
+*   **Metrics**: Total Balance, dynamic Trust Score, and live threat counts.
+*   **Visualizations**: CSS/JS-driven charts detailing Income vs. Expense, Transaction Volume history, and categorical spending breakdowns.
+*   **Live Feed**: A real-time stream of the latest transactions and their AI-assigned safety status.
+
+### 4. 📥 Data Ingestion
+*   **CSV/Excel**: Bulk upload historical bank statements.
+*   **AI Document Analysis**: Upload Image/PDF receipts and let the Gemini parsing algorithm automatically extract the data.
+
+### 5. 🛡️ Alerts & Threat Management
+*   **Anomalies**: View transactions flagged by the Random Forest model.
+*   **Actionable Intelligence**: Approve or block flagged transactions directly from the UI to train the system.
+
+### 6. 🔮 Predictive Simulator
+*   **Transaction Simulator**: Manually input transaction parameters (Amount, Channel, etc.) to query the Random Forest model *before* execution. The AI will output the exact % probability of fraud.
+*   **Model Insights**: View the backend ML metrics (Accuracy, Precision, Recall) directly in the UI.
+
+### 7. 💰 Wealth & Portfolio Management
+*   **Tracking**: Aggregate Stocks, Mutual Funds, Gold, Real Estate, and Crypto.
+*   **Cortex Advisor**: Trigger the Gemini AI to analyze your current asset distribution and provide personalized diversification strategies.
+
+### 8. 🧮 Financial Planning Tools
+*   **Calculators**: Interactive Loan EMI calculators and Eligibility Checkers.
+*   **Budgeting**: Set limits and track spending velocity.
+*   **Credit Simulation**: Model how specific financial actions impact your credit worthiness over time.
 
 ---
 
-## 5. 🛡️ Security: Fraud Alerts
-This is the heart of the platform.
-*   **Anomalies**: Any transaction that doesn't "feel" right to our AI is flagged.
-*   **Risk Levels**: 
-    *   🔴 **High**: Immediate action recommended.
-    *   🟡 **Medium**: Worth a double-check.
-    *   🟢 **Low**: Safe transaction.
-*   **Alerts Page**: View a detailed history of all flagged transactions and why they were marked as risky.
-
----
-
-## 6. 🧠 AI & Analytics
-We use a **Random Forest Machine Learning Model** to predict fraud.
-*   **Predictive Model**: Go to the "Predictive" page to use our **Transaction Simulator**. You can enter custom details (Amount, Channel, KYC status) and the AI will tell you the % chance of fraud *before* you even make the transaction!
-*   **Model Insights**: For advanced users, this page shows how accurate our AI is (Accuracy, Precision, Recall). It's the "brain" of the operation.
-
----
-
-## 7. 💰 Wealth Management: Investments
-Track all your assets in one place:
-*   **Portfolio Tracking**: Add Stocks, Mutual Funds, Gold, Real Estate, and Crypto.
-*   **Total Value**: See your combined net worth change in real-time.
-*   **Cortex Advisor**: Click the "AI Portfolio Analysis" button to get personalized tips on diversifying your investments.
-
----
-
-## 8. 🧮 Financial Tools
-*   **Loan Calculator**: Plan your borrowing. Adjust the sliders for Amount, Interest, and Tenure to see your **Monthly EMI**.
-*   **Eligibility Checker**: Find out if you're eligible for a loan based on your current financial records.
-*   **Budgeting**: Set a monthly limit. Our AI tracks your spending and warns you (via a progress bar) when you're getting close to your limit.
-*   **Credit Score**: Use our simulator to see how actions (like missing a payment or paying off a loan) impact your credit worthiness.
-
----
-
-## 9. 👤 Profile & Settings
-Manage your identity:
-*   **KYC Status**: Update your "Know Your Customer" details to increase your Trust Score.
-*   **Security Level**: Monitor if your account is "Strong" or "Needs Improvement."
-*   **Personal Info**: Keep your email and name updated.
-
----
-
-## 10. 🔌 API Reference (For Developers)
-For those interested in the technical side, here are the key API endpoints that power the platform.
+## 🔌 Complete API Reference
 
 ### 🔐 Authentication & Identity
 *   `POST /register`: Create a new user account.
-*   `POST /login`: Authenticate and receive a secure token.
-*   `POST /verify-registration`: Verify account using the email OTP.
-*   `POST /forgot-password`: Request a password reset OTP.
-*   `POST /reset-password`: Update password using a valid OTP.
+*   `POST /login`: Authenticate and initialize session.
+*   `POST /verify-registration`: Validate email via OTP.
+*   `POST /forgot-password` & `POST /reset-password`: OTP-based credential recovery.
 
 ### 📥 Data & Transactions
-*   `POST /upload`: Upload CSV/Excel statements or scan images/PDFs with AI.
-*   `GET /get-transactions`: Retrieve a history of all processed transactions.
-*   `POST /analyze-transaction`: Get detailed AI risk analysis for a specific transaction.
-*   `DELETE /delete-transaction/<id>`: Remove a specific transaction record.
+*   `POST /upload`: Process CSV/Excel or trigger Gemini for Image/PDF parsing.
+*   `GET /get-transactions`: Retrieve structured transaction history.
+*   `POST /analyze-transaction`: Trigger Random Forest inference on a specific record.
+*   `DELETE /delete-transaction/<id>`: Remove records.
 
 ### 🧠 AI & Analytics
-*   `POST /predict-fraud`: Simulate a transaction to check its fraud probability.
-*   `POST /chat-advisor`: Interact with **Cortex**, the AI financial advisor.
-*   `GET /metrics`: View technical performance data of the ML model.
-*   `GET /get-model-tips`: Get AI-generated recommendations for improving detection accuracy.
+*   `POST /predict-fraud`: Run the predictive simulator inference.
+*   `POST /chat-advisor`: Communicate with the Gemini LLM financial advisor.
+*   `GET /metrics`: Fetch current Random Forest evaluation metrics.
+*   `GET /get-model-tips`: Generate AI recommendations to improve the ML pipeline.
 
 ### 💰 Financial Modules
-*   `POST /transfer`: Securely move funds between accounts.
-*   `POST /handle-investments`: Add or manage your investment portfolio.
-*   `POST /analyze-portfolio`: Get personalized AI advice for your portfolio.
-*   `POST /apply-loan`: Submit applications for various loan products.
+*   `POST /transfer`: Execute simulated fund transfers.
+*   `POST /handle-investments`: Mutate portfolio state.
+*   `POST /analyze-portfolio`: Request LLM-based portfolio analysis.
+*   `POST /apply-loan`: Submit loan applications.
 
 ### ⚙️ System Tools
-*   `GET /test-atlas`: Verify connection to the MongoDB database.
-*   `GET /test_db`: Basic database connectivity check.
+*   `GET /test-atlas` & `GET /test_db`: Database health and connectivity checks.
 
 ---
-
-## 💡 Pro Tip for Beginners
-If your dashboard looks empty, go to the **Upload** page and try uploading a sample CSV or even a photo of a receipt. The platform comes alive as soon as it has data to analyze!
-
----
-*© 2026 BFSI Intelligence Platform - Securing the Digital Economy.*
+*© 2026 BFSI Intelligence Platform - Built with purely Vanilla Web Technologies and cutting-edge AI.*
