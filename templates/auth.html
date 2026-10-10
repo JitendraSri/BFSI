@@ -95,6 +95,8 @@
             <input type="text" id="verifyOtp" placeholder="Enter OTP" required>
             <button type="submit" class="btn" style="width: 100%">Verify Account</button>
           </form>
+          <button type="button" id="resendOtpButton" class="btn" style="width: 100%; margin-top: 0.75rem;"
+            onclick="handleResendOtp()">Resend verification code</button>
           <p class="text-center mt-2">
             <a href="#" onclick="toggleAuth()">Back to Login</a>
           </p>
@@ -257,12 +259,42 @@
           document.getElementById('verifyForm').classList.remove('hidden');
           alert('Registration successful! OTP sent to your email.');
         } else {
+          if (data.verification_pending) {
+            currentEmail = email;
+            document.getElementById('verifyEmail').value = currentEmail;
+            hideAll();
+            document.getElementById('verifyForm').classList.remove('hidden');
+          }
           const msg = data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Registration failed');
           document.getElementById('message').innerText = msg;
         }
       } catch (err) {
         console.error("Register Fetch Error:", err);
         document.getElementById('message').innerText = `Connection Error: Backend unreachable (${err.message}). Is it running at ${API_BASE}?`;
+      }
+    }
+
+    async function handleResendOtp() {
+      const button = document.getElementById('resendOtpButton');
+      const email = document.getElementById('verifyEmail').value || currentEmail;
+      if (!email) {
+        document.getElementById('message').innerText = 'Enter the email address used during registration.';
+        return;
+      }
+
+      button.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE}/resend-registration-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        document.getElementById('message').innerText = data.message || data.error || 'Could not resend the code.';
+      } catch (err) {
+        document.getElementById('message').innerText = 'Could not contact the verification service. Try again later.';
+      } finally {
+        window.setTimeout(() => { button.disabled = false; }, 1000);
       }
     }
 

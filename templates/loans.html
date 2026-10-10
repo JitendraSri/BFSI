@@ -119,8 +119,8 @@
     <script src="/static/js/navbar.js?v=7"></script>
 
     <div class="container">
-        <h1>🧮 Loan Eligibility & EMI Calculator</h1>
-        <p>Plan your borrowing with our advanced EMI calculator and eligibility checker.</p>
+        <h1>Loan EMI & Affordability Calculator</h1>
+        <p>Illustrative planning estimates only. This is not lender eligibility or loan approval.</p>
 
         <div class="loans-header mt-2" style="display:none;">
             <!-- Buttons Removed -->
@@ -144,7 +144,7 @@
                         <span>Interest Rate (%)</span>
                         <span id="dispRate" style="color: #3498db;">10.5%</span>
                     </label>
-                    <input type="range" id="rate" min="1" max="30" step="0.1" value="9.5" oninput="calculate()">
+                    <input type="range" id="rate" min="0" max="30" step="0.1" value="9.5" oninput="calculate()">
                 </div>
 
                 <div class="slider-group">
@@ -155,9 +155,12 @@
                     <input type="range" id="tenure" min="1" max="30" step="1" value="5" oninput="calculate()">
                 </div>
 
-                <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #444;">
-                    <button class="btn" style="width: 100%; background: #9b59b6;" onclick="checkEligibility()">🏦 Check
-                        Eligibility</button>
+                <div style="margin-top: 1rem;">
+                    <label for="monthlyIncome" style="display:block; color:#ccc; margin-bottom:0.5rem;">Your monthly income (₹)</label>
+                    <input type="number" id="monthlyIncome" min="1" step="0.01" placeholder="Enter to estimate affordability" style="width:100%; padding:0.75rem;">
+                </div>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #444;">
+                    <button class="btn" style="width: 100%; background: #9b59b6;" onclick="checkEligibility()">Estimate affordability</button>
                 </div>
             </div>
 
@@ -203,8 +206,8 @@
             const N = n * 12;
 
             let emi = 0;
-            if (P > 0 && r > 0) {
-                emi = (P * R * Math.pow(1 + R, N)) / (Math.pow(1 + R, N) - 1);
+            if (P > 0 && N > 0) {
+                emi = r === 0 ? P / N : (P * R * Math.pow(1 + R, N)) / (Math.pow(1 + R, N) - 1);
             }
 
             const totalPay = emi * N;
@@ -218,7 +221,12 @@
         async function checkEligibility() {
             const box = document.getElementById('eligibilityResult');
             box.style.display = 'block';
-            box.innerHTML = 'Checking bank records...';
+            const monthlyIncome = Number(document.getElementById('monthlyIncome').value);
+            if (!Number.isFinite(monthlyIncome) || monthlyIncome <= 0) {
+                box.textContent = 'Enter your monthly income to calculate an affordability estimate.';
+                return;
+            }
+            box.textContent = 'Calculating illustrative affordability…';
 
             const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
             const token = localStorage.getItem('token');
@@ -232,8 +240,10 @@
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        monthly_income: 50000,
-                        loan_amount: document.getElementById('amt').value
+                        monthly_income: monthlyIncome,
+                        loan_amount: document.getElementById('amt').value,
+                        annual_interest_rate: document.getElementById('rate').value,
+                        tenure_years: document.getElementById('tenure').value
                     })
                 });
 
@@ -247,17 +257,17 @@
                 }
 
                 if (res.ok) {
-                    if (data.eligible) {
-                        box.innerHTML = `<div style="color: #2ecc71;"><strong>✅ Pre-Approved!</strong><br>${data.message}</div>`;
-                    } else {
-                        box.innerHTML = `<div style="color: #e74c3c;"><strong>❌ Not Eligible</strong><br>${data.message}</div>`;
-                    }
+                    const color = data.within_affordability_guideline ? '#2ecc71' : '#f1c40f';
+                    box.textContent = `${data.message} This estimate is not lender approval.`;
+                    box.style.color = color;
                 } else {
-                    box.innerHTML = `<div style="color: #e74c3c;">Error: ${data.error || res.statusText}</div>`;
+                    box.textContent = data.error || 'Could not calculate affordability.';
+                    box.style.color = '#e74c3c';
                 }
             } catch (e) {
                 console.error(e);
-                box.innerHTML = `<div style="color: #e74c3c;">Connection Error: ${e.message}</div>`;
+                box.textContent = 'Could not reach the affordability service.';
+                box.style.color = '#e74c3c';
             }
         }
 

@@ -7,9 +7,11 @@ dnspython
 bcrypt==4.0.1
 PyJWT==2.8.0
 google-generativeai
+pypdf>=5.0.0,<7.0.0
 scikit-learn
 joblib
 openpyxl
 flask-caching
 flask-compress
 certifi
+numpy<2.0.0

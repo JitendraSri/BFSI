@@ -74,6 +74,8 @@
   </div>
 
   <script>
+    const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+
     // Enable drag and drop
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
@@ -120,6 +122,94 @@
       }
     }
 
+    function renderTransactionPreview(data, token) {
+      const output = document.getElementById('output');
+      output.replaceChildren();
+      const panel = document.createElement('div');
+      panel.className = 'glass card';
+      panel.style.cssText = 'margin-top:1rem;text-align:left;';
+      const heading = document.createElement('h2');
+      heading.textContent = `Review ${data.file_name} before import`;
+      const summary = document.createElement('p');
+      summary.textContent = `Detected ${data.rows_detected} rows · Valid ${data.valid_rows} · Rejected ${data.rejected} · Duplicates skipped ${data.duplicates_skipped}`;
+      panel.append(heading, summary);
+
+      if (data.explanation) {
+        const explanation = document.createElement('p');
+        explanation.textContent = data.explanation;
+        panel.append(explanation);
+      }
+
+      const tableWrap = document.createElement('div');
+      tableWrap.style.cssText = 'overflow:auto;margin-top:1rem;';
+      const table = document.createElement('table');
+      table.className = 'data-table';
+      const columns = ['transaction_id', 'timestamp', 'description', 'direction', 'transaction_amount', 'currency', 'channel', 'category', 'status', 'is_fraud'];
+      const head = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      columns.forEach((column) => {
+        const cell = document.createElement('th');
+        cell.textContent = column.replaceAll('_', ' ');
+        headRow.append(cell);
+      });
+      head.append(headRow);
+      const body = document.createElement('tbody');
+      (data.preview || []).forEach((record) => {
+        const row = document.createElement('tr');
+        columns.forEach((column) => {
+          const cell = document.createElement('td');
+          cell.textContent = record[column] === null || record[column] === undefined ? 'Not available' : String(record[column]);
+          row.append(cell);
+        });
+        body.append(row);
+      });
+      table.append(head, body);
+      tableWrap.append(table);
+      panel.append(tableWrap);
+
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1rem;';
+      const cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = 'btn btn-outline';
+      cancel.textContent = 'Discard preview';
+      cancel.addEventListener('click', () => output.replaceChildren());
+      const confirm = document.createElement('button');
+      confirm.type = 'button';
+      confirm.className = 'btn';
+      confirm.textContent = 'Confirm import';
+      confirm.addEventListener('click', async () => {
+        confirm.disabled = true;
+        confirm.textContent = 'Saving…';
+        try {
+          const response = await fetch(API_BASE + '/upload/confirm', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ preview_id: data.preview_id })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Transactions could not be saved.');
+          const notice = document.createElement('p');
+          notice.className = 'success';
+          notice.textContent = `Imported ${result.imported} transactions. Processed ${result.processed}; rejected ${result.rejected}; duplicates skipped ${result.duplicates_skipped}; unchanged ${result.unchanged}.`;
+          panel.replaceChildren(notice);
+          document.getElementById('progressBar').style.display = 'none';
+          document.getElementById('uploadBtn').disabled = false;
+          document.getElementById('uploadBtn').innerHTML = '<i class="fas fa-upload"></i> Upload & Analyze';
+        } catch (error) {
+          confirm.disabled = false;
+          confirm.textContent = 'Confirm import';
+          const errorMessage = document.createElement('p');
+          errorMessage.className = 'error';
+          errorMessage.textContent = error.message;
+          panel.append(errorMessage);
+        }
+      });
+      actions.append(cancel, confirm);
+      panel.append(actions);
+      output.append(panel);
+    }
+
     async function upload() {
       const f = document.getElementById('fileInput').files[0];
       const token = localStorage.getItem('token');
@@ -159,7 +249,6 @@
       fd.append('file', f);
 
       try {
-        const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
         const res = await fetch(API_BASE + '/upload', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token },
@@ -173,11 +262,20 @@
         const data = await res.json();
 
         if (res.ok) {
+          if (data.status === 'preview') {
+            progressText.textContent = 'Preview ready.';
+            progressBar.style.display = 'none';
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Analyze';
+            renderTransactionPreview(data, token);
+            return;
+          }
           progressText.textContent = 'Complete!';
           let successHtml = `
             <div style="background: rgba(46, 204, 113, 0.1); padding: 1.5rem; border-radius: 8px; border: 1px solid #2ecc71; margin-top: 1rem;">
               <p class="success" style="font-size: 1.1rem;"><strong>✓ Successfully uploaded and analyzed!</strong></p>
               <p style="color: #ccc; margin-top: 0.5rem;">Imported <strong>${data.imported}</strong> transaction records.</p>
+              <p style="color: #aaa; margin-top: 0.35rem;">Detected ${data.rows_detected ?? data.processed} rows · Processed ${data.processed ?? data.imported} · Rejected ${data.rejected ?? 0} · Duplicates skipped ${data.duplicates_skipped ?? 0} · Unchanged ${data.unchanged ?? 0}</p>
           `;
 
           if (data.explanation) {

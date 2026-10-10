@@ -77,6 +77,10 @@ function injectSidebar(isLoggedIn = true) {
                     <span class="sidebar-icon">⭐</span>
                     <span>Credit Score</span>
                 </a>
+                <a href="rag" class="sidebar-link" data-page="rag">
+                    <span class="sidebar-icon">🔎</span>
+                    <span>RAG</span>
+                </a>
                 <a href="profile.html" class="sidebar-link" data-page="profile">
                     <span class="sidebar-icon">👤</span>
                     <span>Profile</span>

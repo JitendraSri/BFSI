@@ -104,18 +104,18 @@
 
     <div class="container">
         <h1>🛡️ Credit Score Simulator</h1>
-        <p>Analyze how financial actions impact your credit worthiness.</p>
+        <p>Explore hypothetical scenarios. This is not an official credit score or lender assessment.</p>
 
         <div class="simulator-grid mt-2">
             <!-- Score Display -->
             <div class="glass card" style="text-align: center;">
                 <h3>Your Simulated Score</h3>
                 <div class="score-circle" id="scoreCircle">
-                    <div class="score-val" id="scoreVal">750</div>
-                    <div class="score-label" id="scoreText">Excellent</div>
+                    <div class="score-val" id="scoreVal">650</div>
+                    <div class="score-label" id="scoreText">Illustrative baseline</div>
                 </div>
                 <div style="margin-top: 1.5rem; color: #ccc;">
-                    National Average: 720
+                    Example starting point only; real scoring models differ.
                 </div>
                 <button class="btn mt-2" onclick="saveScore()">Save Score to Profile</button>
             </div>
@@ -182,8 +182,8 @@
         const token = localStorage.getItem('token');
         if (!token) window.location.href = 'auth.html';
 
-        let baseScore = 750;
-        let currentScore = 750;
+        let baseScore = 650;
+        let currentScore = 650;
 
         async function init() {
             try {
@@ -191,7 +191,7 @@
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 const data = await res.json();
-                baseScore = data.score;
+                baseScore = Number.isInteger(data.score) ? data.score : 650;
                 currentScore = baseScore;
                 renderScore(currentScore);
             } catch (e) {
@@ -201,9 +201,9 @@
 
         function updateScore(delta, checkbox) {
             if (checkbox.checked) {
-                currentScore += delta;
+                currentScore = Math.max(300, Math.min(850, currentScore + delta));
             } else {
-                currentScore -= delta;
+                currentScore = Math.max(300, Math.min(850, currentScore - delta));
             }
             renderScore(currentScore);
         }
@@ -216,29 +216,28 @@
             // Animate number
             el.innerText = score;
 
-            // Color Coding
+            // The value is a hypothetical scenario, not a bureau score.
+            text.innerText = 'Illustrative simulation';
             if (score >= 750) {
                 circle.style.borderColor = '#2ecc71'; // Green
-                text.innerText = 'Excellent';
                 text.style.color = '#2ecc71';
             } else if (score >= 650) {
                 circle.style.borderColor = '#f1c40f'; // Yellow
-                text.innerText = 'Good';
                 text.style.color = '#f1c40f';
             } else {
                 circle.style.borderColor = '#e74c3c'; // Red
-                text.innerText = 'Needs Work';
                 text.style.color = '#e74c3c';
             }
         }
 
         async function saveScore() {
-            await fetch(API_BASE + '/api/credit-score', {
+            const response = await fetch(API_BASE + '/api/credit-score', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: JSON.stringify({ score: currentScore })
             });
-            alert('Score saved to profile!');
+            if (response.ok) alert('Simulation saved. This is not an official credit score.');
+            else alert('Could not save the simulation. Please try again.');
         }
 
         init();

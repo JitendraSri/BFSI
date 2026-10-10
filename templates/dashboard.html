@@ -32,7 +32,7 @@
 
       <!-- Card 2: Suspicious Activity -->
       <div class="glass stat-card-mini" style="border-bottom: 3px solid #e74c3c;">
-        <h3>Suspicious Activity</h3>
+        <h3>Model-Flagged Transactions</h3>
         <div class="value" id="suspicious-activity" style="color: #e74c3c">-</div>
         <i class="fas fa-exclamation-triangle icon-bg"></i>
       </div>
@@ -81,7 +81,7 @@
           <canvas id="trustGaugeChart" style="max-height: 100%;"></canvas>
           <div style="position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
             <div id="trust-score-val" style="font-size: 2.5rem; font-weight: bold;">-</div>
-            <div style="font-size: 0.9rem; color: #aaa;">Fair</div>
+            <div style="font-size: 0.9rem; color: #aaa;">Not assessed</div>
           </div>
         </div>
         <div style="margin-top: 1rem;">
@@ -115,7 +115,7 @@
 
       <!-- Row 3: AI Prediction (Right) -->
       <div class="glass card col-span-6">
-        <h3>AI Prediction vs Actual</h3>
+        <h3>Spending Forecast</h3>
         <div class="chart-container" style="height: 250px;">
           <canvas id="predictionChart"></canvas>
         </div>
@@ -130,14 +130,14 @@
         <h2>Intelligence Snapshot</h2>
         <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 1rem;">
           <div style="flex: 1; min-width: 150px; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px;">
-            <div style="color: #aaa; margin-bottom: 5px;">Next Month Expense (AI Pred)</div>
+            <div style="color: #aaa; margin-bottom: 5px;">Next Month Expense Forecast</div>
             <div style="font-size: 1.8rem; font-weight: bold;" id="expense-pred">-</div>
-            <div style="font-size: 0.8rem; color: #2ecc71;">Based on spending patterns</div>
+            <div style="font-size: 0.8rem; color: #aaa;">Unavailable until a validated forecast is configured</div>
           </div>
           <div style="flex: 1; min-width: 150px; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px;">
-            <div style="color: #aaa; margin-bottom: 5px;">Overall Fraud Risk Level</div>
+            <div style="color: #aaa; margin-bottom: 5px;">Account-Level Fraud Risk</div>
             <div style="font-size: 1.8rem; font-weight: bold;" id="fraud-risk">-</div>
-            <div style="font-size: 0.8rem; color: #aaa;">AI Assessment</div>
+            <div style="font-size: 0.8rem; color: #aaa;">Not assessed from account data</div>
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ venv/
 
 # dotenv
 .env
+assets/rag_documents/
 
 # Byte-compiled / optimized / DLL files
 *.pyc

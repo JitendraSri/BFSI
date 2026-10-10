@@ -1,0 +1,417 @@
+.rag-page {
+  max-width: 1320px;
+  padding-top: 42px;
+  padding-bottom: 48px;
+}
+
+.rag-heading,
+.rag-section-heading,
+.rag-submit-row,
+.rag-library-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.rag-heading {
+  margin-bottom: 28px;
+}
+
+.rag-heading h1 {
+  margin: 3px 0 5px;
+  font-size: 2rem;
+}
+
+.rag-eyebrow {
+  color: var(--secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.rag-subtitle,
+.rag-form-note,
+.rag-submit-row p,
+.rag-empty,
+.rag-answer-empty p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.rag-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.rag-status span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.rag-layout {
+  display: grid;
+  grid-template-columns: minmax(270px, 0.78fr) minmax(0, 1.6fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.rag-library,
+.rag-query-panel {
+  min-width: 0;
+  padding: 24px;
+  border-radius: 10px;
+}
+
+.rag-section-heading {
+  margin-bottom: 22px;
+}
+
+.rag-section-heading h2 {
+  margin-top: 3px;
+  font-size: 1.2rem;
+}
+
+.rag-section-heading > i {
+  color: var(--secondary);
+  font-size: 1.1rem;
+}
+
+.rag-upload-form {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.rag-file-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 12px;
+  overflow: hidden;
+  border: 1px dashed var(--glass-border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rag-file-label i {
+  color: var(--secondary);
+}
+
+.rag-file-label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#rag-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+#rag-file:focus-visible + .rag-button {
+  outline: 2px solid var(--secondary);
+}
+
+.rag-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rag-button-primary {
+  background: var(--primary);
+}
+
+.rag-button-secondary {
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-main);
+}
+
+.rag-button-primary:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.rag-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.rag-form-note {
+  font-size: 0.78rem;
+}
+
+.rag-message {
+  min-height: 1.2em;
+  color: var(--color-info);
+  font-size: 0.82rem;
+}
+
+.rag-message.error {
+  color: var(--color-danger);
+}
+
+.rag-library-heading {
+  margin: 20px 0 12px;
+}
+
+.rag-catalog {
+  display: grid;
+  gap: 10px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.rag-catalog label {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.rag-catalog select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.84rem;
+}
+
+.rag-library-heading h3 {
+  font-size: 0.92rem;
+}
+
+.rag-library-heading span {
+  min-width: 26px;
+  padding: 2px 7px;
+  border-radius: 12px;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.rag-document-list {
+  display: grid;
+  gap: 8px;
+}
+
+.rag-document-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 4px;
+}
+
+.rag-document-item {
+  display: grid;
+  width: 100%;
+  gap: 3px;
+  padding: 11px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-main);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rag-document-delete {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rag-document-delete:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.rag-document-delete:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.rag-document-item:hover,
+.rag-document-item.selected {
+  border-color: var(--glass-border);
+  background: var(--bg-input);
+}
+
+.rag-document-name {
+  overflow-wrap: anywhere;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.rag-document-meta {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.rag-question-form {
+  display: grid;
+  gap: 10px;
+}
+
+.rag-question-form label {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.rag-question-form select,
+.rag-question-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 13px;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  outline: none;
+  background: var(--bg-input);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.rag-question-form select:focus,
+.rag-question-form textarea:focus {
+  border-color: var(--secondary);
+}
+
+.rag-question-form textarea {
+  min-height: 106px;
+  resize: vertical;
+}
+
+.rag-submit-row {
+  align-items: flex-end;
+  margin-top: 3px;
+}
+
+.rag-submit-row p {
+  max-width: 440px;
+  font-size: 0.8rem;
+}
+
+.rag-answer {
+  min-height: 220px;
+  margin-top: 24px;
+  padding: 20px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.rag-answer-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 32px 12px;
+  text-align: center;
+}
+
+.rag-answer-empty h3 {
+  font-size: 1rem;
+}
+
+.rag-answer-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  margin-bottom: 5px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  color: var(--secondary);
+}
+
+.rag-answer h3 {
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.rag-answer-text {
+  color: var(--text-main);
+  font-size: 0.94rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.rag-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.rag-source {
+  padding: 6px 9px;
+  border: 1px solid var(--glass-border);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 0.77rem;
+}
+
+@media (max-width: 850px) {
+  .rag-page {
+    padding-top: 28px;
+  }
+
+  .rag-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .rag-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .rag-library,
+  .rag-query-panel {
+    padding: 18px;
+  }
+
+  .rag-submit-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .rag-submit-row .rag-button {
+    width: 100%;
+  }
+}

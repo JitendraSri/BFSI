@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RAG Workspace - BFSI Intelligence</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=7">
+  <link rel="stylesheet" href="/static/css/rag.css?v=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <script src="/static/js/navbar.js?v=8"></script>
+  <main class="container rag-page">
+    <header class="rag-heading">
+      <div>
+        <p class="rag-eyebrow">DOCUMENT INTELLIGENCE</p>
+        <h1>RAG Workspace</h1>
+        <p class="rag-subtitle">Search your financial documents and get answers grounded in their contents.</p>
+      </div>
+      <span class="rag-status"><span></span> Private library</span>
+    </header>
+
+    <div class="rag-layout">
+      <aside class="glass rag-library">
+        <div class="rag-section-heading">
+          <div>
+            <p class="rag-eyebrow">YOUR SOURCES</p>
+            <h2>Document library</h2>
+          </div>
+          <i class="fas fa-folder-open" aria-hidden="true"></i>
+        </div>
+
+        <form id="rag-upload-form" class="rag-upload-form">
+          <label class="rag-file-label" for="rag-file">
+            <i class="fas fa-file-arrow-up" aria-hidden="true"></i>
+            <span id="rag-file-name">Choose a document</span>
+          </label>
+          <input id="rag-file" name="file" type="file" accept=".pdf,.html,.htm,.md,.txt" required>
+          <button class="rag-button rag-button-primary" type="submit" id="rag-index-button">
+            <i class="fas fa-layer-group" aria-hidden="true"></i> Index document
+          </button>
+          <p class="rag-form-note">PDF, HTML, Markdown, or text · 10 MB maximum</p>
+          <p class="rag-message" id="rag-upload-message" role="status"></p>
+        </form>
+
+        <div class="rag-catalog">
+          <label for="rag-catalog-select">FinRAG 10-K library</label>
+          <select id="rag-catalog-select">
+            <option value="">Loading available reports…</option>
+          </select>
+          <button class="rag-button rag-button-secondary" type="button" id="rag-catalog-button" disabled>
+            <i class="fas fa-book-open" aria-hidden="true"></i> Index report
+          </button>
+          <p class="rag-message" id="rag-catalog-message" role="status"></p>
+        </div>
+
+        <div class="rag-library-heading">
+          <h3>Indexed documents</h3>
+          <span id="rag-document-count">0</span>
+        </div>
+        <div class="rag-document-list" id="rag-document-list" aria-live="polite">
+          <p class="rag-empty">Loading your library…</p>
+        </div>
+      </aside>
+
+      <section class="glass rag-query-panel">
+        <div class="rag-section-heading">
+          <div>
+            <p class="rag-eyebrow">ASK YOUR DOCUMENT</p>
+            <h2>Financial Q&amp;A</h2>
+          </div>
+          <i class="fas fa-magnifying-glass-chart" aria-hidden="true"></i>
+        </div>
+
+        <form id="rag-question-form" class="rag-question-form">
+          <label for="rag-document-select">Source document</label>
+          <select id="rag-document-select" required>
+            <option value="">Index a document to begin</option>
+          </select>
+          <label for="rag-question">Question</label>
+          <textarea id="rag-question" rows="4" maxlength="1000" placeholder="Ask about revenue, risk factors, cash flow…" required></textarea>
+          <div class="rag-submit-row">
+            <p>Answers are based on retrieved passages and include source references.</p>
+            <button class="rag-button rag-button-primary" id="rag-ask-button" type="submit" disabled>
+              Ask <i class="fas fa-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </form>
+
+        <div class="rag-answer" id="rag-answer" aria-live="polite">
+          <div class="rag-answer-empty">
+            <span class="rag-answer-icon"><i class="fas fa-quote-left" aria-hidden="true"></i></span>
+            <h3>Your answer will appear here</h3>
+            <p>Index a report, choose it as your source, and ask a question.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script src="/static/js/rag.js?v=1" defer></script>
+</body>
+</html>

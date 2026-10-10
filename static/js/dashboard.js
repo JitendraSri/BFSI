@@ -71,21 +71,25 @@ function renderTopCards(stats, counts) {
 
     // Security Status Color
     const secStatus = document.getElementById('security-status');
-    secStatus.innerText = stats.security_status;
-    secStatus.style.color = stats.security_status === 'Strong' ? '#2ecc71' : (stats.security_status === 'Moderate' ? '#f1c40f' : '#e74c3c');
+    secStatus.innerText = stats.security_status || 'Not assessed';
+    secStatus.style.color = stats.security_status ? (stats.security_status === 'Strong' ? '#2ecc71' : (stats.security_status === 'Moderate' ? '#f1c40f' : '#e74c3c')) : 'var(--text-muted)';
 
-    document.getElementById('current-balance').innerText = '₹' + stats.balance.toLocaleString();
+    document.getElementById('current-balance').innerText = stats.balance === null || stats.balance === undefined
+        ? 'Not available'
+        : '₹' + Number(stats.balance).toLocaleString();
 }
 
 // Old single chart render removed/replaced by renderCharts_All
 
 
 function renderIntelligence(intel) {
-    document.getElementById('expense-pred').innerText = '₹' + intel.expense_prediction.toLocaleString();
+    document.getElementById('expense-pred').innerText = intel.expense_prediction === null || intel.expense_prediction === undefined
+        ? 'Insufficient data'
+        : '₹' + Number(intel.expense_prediction).toLocaleString();
 
     const riskEl = document.getElementById('fraud-risk');
     riskEl.innerText = intel.fraud_risk_level;
-    riskEl.style.color = intel.fraud_risk_level === 'Low' ? '#2ecc71' : (intel.fraud_risk_level === 'Medium' ? '#f1c40f' : '#e74c3c');
+    riskEl.style.color = intel.fraud_risk_level === 'Not assessed' ? 'var(--text-muted)' : (intel.fraud_risk_level === 'Low' ? '#2ecc71' : (intel.fraud_risk_level === 'Medium' ? '#f1c40f' : '#e74c3c'));
 }
 
 function renderAlerts(alerts) {
@@ -101,19 +105,33 @@ function renderAlerts(alerts) {
         const item = document.createElement('div');
         item.className = 'alert-item glass';
         item.style.flexDirection = 'column'; // Allow expansion
-        item.innerHTML = `
-            <div style="display:flex; width:100%; align-items:center;">
-                <div class="alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                <div class="alert-info">
-                    <div class="alert-title">Suspicious Txn #${a.transaction_id}</div>
-                    <div class="alert-meta">${new Date(a.timestamp).toLocaleDateString()} • ₹${a.transaction_amount.toLocaleString()}</div>
-                </div>
-                <div class="alert-action">
-                    <button class="btn-sm btn-outline" onclick="reviewAlert('${a.transaction_id}', '${a.transaction_amount}', '${a.channel}', '${a.timestamp}')">Review</button>
-                </div>
-            </div>
-            <div id="review-result-${a.transaction_id}" style="display:none; width:100%; margin-top:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:6px; font-size:0.9rem;"></div>
-        `;
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;width:100%;align-items:center;';
+        const icon = document.createElement('div');
+        icon.className = 'alert-icon';
+        icon.innerHTML = '<i class="fas fa-exclamation-triangle" aria-hidden="true"></i>';
+        const info = document.createElement('div');
+        info.className = 'alert-info';
+        const title = document.createElement('div');
+        title.className = 'alert-title';
+        title.textContent = `Model-flagged transaction #${a.transaction_id}`;
+        const meta = document.createElement('div');
+        meta.className = 'alert-meta';
+        meta.textContent = `${new Date(a.timestamp).toLocaleDateString()} · ₹${Number(a.transaction_amount || 0).toLocaleString()}`;
+        info.append(title, meta);
+        const action = document.createElement('div');
+        action.className = 'alert-action';
+        const reviewButton = document.createElement('button');
+        reviewButton.type = 'button';
+        reviewButton.className = 'btn-sm btn-outline';
+        reviewButton.textContent = 'Review';
+        const result = document.createElement('div');
+        result.id = `review-result-${a.transaction_id}`;
+        result.style.cssText = 'display:none;width:100%;margin-top:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:0.9rem;white-space:pre-wrap;';
+        reviewButton.addEventListener('click', () => reviewAlert(a.transaction_id, a.transaction_amount, a.channel, a.timestamp));
+        action.append(reviewButton);
+        row.append(icon, info, action);
+        item.append(row, result);
         list.appendChild(item);
     });
 }
@@ -148,10 +166,8 @@ async function reviewAlert(id, amount, channel, timestamp) {
         const data = await res.json();
 
         if (res.ok && data.analysis) {
-            let formatted = data.analysis
-                .replace(/\n\n/g, '<br><br>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            resultDiv.innerHTML = `<div style="color:#ddd;">${formatted}</div>`;
+            resultDiv.textContent = data.analysis;
+            resultDiv.style.color = '#ddd';
         } else {
             resultDiv.innerHTML = '<div style="color:orange;">Analysis unavailable.</div>';
         }
@@ -170,9 +186,9 @@ function renderTrustCard(stats) {
     }
 
     const trustScoreElement = document.getElementById('trust-score');
-    const trustScore = stats.trust_score || 0;
+    const trustScore = stats.trust_score;
     if (trustScoreElement) {
-        trustScoreElement.innerText = trustScore;
+        trustScoreElement.innerText = trustScore === null || trustScore === undefined ? 'N/A' : trustScore;
     }
 
     // Circle progress handled by gauge chart now
@@ -192,7 +208,7 @@ function renderCharts_All(data) {
     if (data.fraud_trend_data) renderFraudTrendChart(data.fraud_trend_data);
 
     // 5. Trust Score (Gauge)
-    if (data.user_stats) renderTrustGauge(data.user_stats.trust_score || 0);
+    if (data.user_stats) renderTrustGauge(data.user_stats.trust_score);
 
     // 6. AI Prediction (Line Comparison)
     if (data.prediction_data) renderPredictionChart(data.prediction_data);
@@ -200,9 +216,28 @@ function renderCharts_All(data) {
 
 // --- Chart Rendering Functions ---
 
+function showChartEmpty(canvas, message) {
+    canvas.style.display = 'none';
+    let empty = canvas.parentElement.querySelector('.chart-empty');
+    if (!empty) {
+        empty = document.createElement('p');
+        empty.className = 'chart-empty text-muted';
+        empty.style.cssText = 'display:grid;place-items:center;height:100%;text-align:center;padding:1rem;';
+        canvas.parentElement.appendChild(empty);
+    }
+    empty.textContent = message;
+}
+
+function clearChartEmpty(canvas) {
+    canvas.style.display = '';
+    canvas.parentElement.querySelector('.chart-empty')?.remove();
+}
+
 function renderVolumeChart(chartData) {
     const ctx = document.getElementById('txnVolumeChart');
     if (!ctx) return;
+    if (!chartData?.length) { showChartEmpty(ctx, 'No transaction volume available for this period.'); return; }
+    clearChartEmpty(ctx);
 
     const labels = chartData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
     const values = chartData.map(d => d.value);
@@ -227,6 +262,8 @@ function renderVolumeChart(chartData) {
 function renderIncomeExpenseChart(data) {
     const ctx = document.getElementById('incomeExpenseChart');
     if (!ctx) return;
+    if (!data?.length) { showChartEmpty(ctx, 'Income and expense direction is not available yet.'); return; }
+    clearChartEmpty(ctx);
 
     const labels = data.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
     const income = data.map(d => d.income);
@@ -262,6 +299,8 @@ function renderIncomeExpenseChart(data) {
 function renderCategoryChart(data) {
     const ctx = document.getElementById('categoryChart');
     if (!ctx) return;
+    if (!data?.length) { showChartEmpty(ctx, 'No categorized debit transactions available.'); return; }
+    clearChartEmpty(ctx);
 
     const labels = data.map(d => d.category);
     const values = data.map(d => d.amount);
@@ -292,6 +331,8 @@ function renderCategoryChart(data) {
 function renderFraudTrendChart(data) {
     const ctx = document.getElementById('fraudTrendChart');
     if (!ctx) return;
+    if (!data?.length) { showChartEmpty(ctx, 'No model-flagged transactions in this period.'); return; }
+    clearChartEmpty(ctx);
 
     const labels = data.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
     const values = data.map(d => d.count);
@@ -314,6 +355,16 @@ function renderFraudTrendChart(data) {
 function renderTrustGauge(score) {
     const ctx = document.getElementById('trustGaugeChart');
     if (!ctx) return;
+    const textEl = document.getElementById('trust-score-val');
+    if (score === null || score === undefined) {
+        ctx.style.display = 'none';
+        if (textEl) {
+            textEl.innerText = 'N/A';
+            textEl.nextElementSibling.innerText = 'Not assessed';
+        }
+        return;
+    }
+    ctx.style.display = '';
 
     // Determine color
     let color = '#e74c3c';
@@ -322,7 +373,6 @@ function renderTrustGauge(score) {
     else if (score > 40) { color = '#f1c40f'; label = 'Fair'; }
 
     // Update text
-    const textEl = document.getElementById('trust-score-val');
     if (textEl) {
         textEl.innerText = score;
         textEl.style.color = color;
@@ -356,6 +406,8 @@ function renderTrustGauge(score) {
 function renderPredictionChart(data) {
     const ctx = document.getElementById('predictionChart');
     if (!ctx) return;
+    if (!data?.length) { showChartEmpty(ctx, 'Insufficient validated history for a forecast.'); return; }
+    clearChartEmpty(ctx);
 
     const labels = data.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
     const actual = data.map(d => d.actual);

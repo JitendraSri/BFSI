@@ -64,7 +64,7 @@
             <div>
                 <div class="glass card summary-card">
                     <div>
-                        <div style="color: #ccc;">Total Monthly Spending</div>
+                        <div style="color: #ccc;">Current-Month Expenses</div>
                         <h2 style="margin: 0; font-size: 2.5rem;" id="totalSpend">₹0</h2>
                     </div>
                     <div style="text-align: right;">
@@ -131,20 +131,22 @@
 
         function renderDashboard(data) {
             // Summary
-            document.getElementById('totalSpend').innerText = '₹' + data.total_spend.toLocaleString();
-            document.getElementById('budgetLimit').innerText = '₹' + data.budget_limit.toLocaleString();
+            const hasSpend = data.total_spend !== null && Number.isFinite(Number(data.total_spend));
+            const hasLimit = data.budget_limit !== null && Number.isFinite(Number(data.budget_limit)) && Number(data.budget_limit) > 0;
+            document.getElementById('totalSpend').innerText = hasSpend ? '₹' + Number(data.total_spend).toLocaleString() : 'Insufficient data';
+            document.getElementById('budgetLimit').innerText = hasLimit ? '₹' + Number(data.budget_limit).toLocaleString() : 'Not set';
 
             // Progress
-            const pct = Math.min((data.total_spend / data.budget_limit) * 100, 100);
             const fill = document.getElementById('progFill');
-            fill.style.width = pct + '%';
+            const pct = hasSpend && hasLimit ? Math.min((Number(data.total_spend) / Number(data.budget_limit)) * 100, 100) : null;
+            fill.style.width = pct === null ? '0%' : pct + '%';
 
             if (pct > 90) fill.style.backgroundColor = '#e74c3c';
             else if (pct > 70) fill.style.backgroundColor = '#f1c40f';
             else fill.style.backgroundColor = '#2ecc71';
 
-            document.getElementById('pctLabel').innerText = pct.toFixed(1) + '% Used';
-            document.getElementById('remLabel').innerText = 'Remaining: ₹' + Math.max(0, data.budget_limit - data.total_spend).toLocaleString();
+            document.getElementById('pctLabel').innerText = pct === null ? 'Set a budget and import debit/credit direction data' : pct.toFixed(1) + '% Used';
+            document.getElementById('remLabel').innerText = pct === null ? 'Remaining: Not available' : 'Remaining: ₹' + Math.max(0, Number(data.budget_limit) - Number(data.total_spend)).toLocaleString();
 
             // Chart
             const ctx = document.getElementById('spendChart');
@@ -176,10 +178,12 @@
             data.categories.forEach(c => {
                 const div = document.createElement('div');
                 div.className = 'category-item';
-                div.innerHTML = `
-                    <span>${c._id}</span>
-                    <span style="color: #aaa;">₹${c.total.toLocaleString()}</span>
-                `;
+                const category = document.createElement('span');
+                category.textContent = c._id || 'Uncategorized';
+                const total = document.createElement('span');
+                total.style.color = '#aaa';
+                total.textContent = '₹' + Number(c.total).toLocaleString();
+                div.append(category, total);
                 list.appendChild(div);
             });
         }
