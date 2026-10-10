@@ -17,13 +17,64 @@ import hmac
 import secrets
 import uuid
 import argparse
+from dateutil.relativedelta import relativedelta
 from werkzeug.utils import secure_filename
+
+# Prompt injection detection patterns
+INJECTION_PATTERNS = [
+    r'ignore\s+(previous|above|prior)\s+instructions?',
+    r'disregard\s+(previous|above|prior)\s+instructions?',
+    r'system\s*:',
+    r'assistant\s*:',
+    r'user\s*:',
+    r'<\|im_start\|>',
+    r'<\|im_end\|>',
+    r'\[INST\]',
+    r'\[/INST\]',
+    r'<<SYS>>',
+    r'<</SYS>>',
+    r'###\s*(Instruction|System|User|Assistant)',
+    r'act\s+as\s+(if\s+you\s+are|a\s+)',
+    r'pretend\s+(to\s+be|you\s+are)',
+    r'roleplay\s+as',
+    r'you\s+are\s+now',
+    r'forget\s+(everything|all\s+previous)',
+    r'new\s+instructions?\s*:',
+    r'override\s+(previous|system)',
+    r'bypass\s+(safety|security|filter)',
+    r'ignore\s+safety',
+    r'no\s+restrictions?',
+    r'unrestricted',
+]
+
+INJECTION_REGEX = re.compile('|'.join(INJECTION_PATTERNS), re.IGNORECASE)
+
+
+def detect_prompt_injection(text: str) -> bool:
+    """Detect potential prompt injection attempts in user input."""
+    if not text or not isinstance(text, str):
+        return False
+    return bool(INJECTION_REGEX.search(text))
+
+
+def sanitize_ai_input(text: str, max_length: int = 1000) -> str:
+    """Sanitize user input for AI prompts: length limit and basic cleaning."""
+    if not text:
+        return ''
+    text = str(text).strip()
+    if len(text) > max_length:
+        text = text[:max_length]
+    # Remove potential control characters
+    text = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', text)
+    return text
 
 # Third-party imports
 from flask import Flask, request, jsonify, send_from_directory, render_template, Response
 from flask_cors import CORS
 from flask_caching import Cache
 from flask_compress import Compress
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 import pymongo
 from bson.objectid import ObjectId
@@ -52,7 +103,9 @@ DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_USER = os.getenv('DB_USER', 'root')
 DB_PASSWORD = os.getenv('DB_PASSWORD', '')
 DB_NAME = os.getenv('DB_NAME', 'BFSI')
-SECRET_KEY = os.getenv('SECRET_KEY', 'change-this-secret')
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY must be set in environment. Refusing to start with default secret.")
 MONGO_URI = os.getenv('MONGO_URI')
 
 # SMTP Configuration
@@ -539,7 +592,13 @@ def train_model():
     """
     logger.info("Starting model training...")
     try:
-        client = pymongo.MongoClient(MONGO_URI, tlsAllowInvalidCertificates=True)
+        client = pymongo.MongoClient(
+            MONGO_URI,
+            tlsCAFile=certifi.where(),
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
+            socketTimeoutMS=5000,
+        )
         db = client[DB_NAME]
         
         # Fetch required fields, exclude _id
@@ -649,8 +708,18 @@ load_ml_model()
 # ==========================================
 genai_service = GenAIService()
 
+# CORS Configuration - restrict to configured frontend origin
+FRONTEND_ORIGIN = os.getenv('FRONTEND_ORIGIN', 'http://localhost:5000')
 app = Flask(__name__, static_folder='static', template_folder='templates')
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": FRONTEND_ORIGIN}})
+
+# --- RATE LIMITING ---
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per minute"],
+    storage_uri="memory://",
+)
 
 # --- PERFORMANCE CONFIG ---
 # 1. COMPRESSION (Gzip/Brotli)
@@ -736,11 +805,10 @@ def test_db():
 print(f"DEBUG: MongoDB URI configured: {bool(MONGO_URI)}")
 try:
     print(f"DEBUG: Connecting to DB...")
-    # Attempt connection but do not crash if it fails immediately
     # OPTIMIZATION: Connection Pooling
     client = pymongo.MongoClient(
         MONGO_URI, 
-        tlsAllowInvalidCertificates=True, 
+        tlsCAFile=certifi.where(),
         serverSelectionTimeoutMS=5000,
         connectTimeoutMS=5000,
         socketTimeoutMS=5000,
@@ -762,7 +830,7 @@ def test_atlas():
     """Explicitly test connection to Atlas and return result"""
     try:
         # Force a fresh connection attempt
-        test_client = pymongo.MongoClient(MONGO_URI, tlsAllowInvalidCertificates=True, serverSelectionTimeoutMS=3000)
+        test_client = pymongo.MongoClient(MONGO_URI, tlsCAFile=certifi.where(), serverSelectionTimeoutMS=3000)
         info = test_client.server_info()
         return jsonify({
             "status": "success",
@@ -862,6 +930,7 @@ def rag_index():
 
 @app.route('/api/rag/ask', methods=['POST'])
 @auth_required
+@limiter.limit("20 per minute")
 def rag_ask():
     user_id = rag_user_id()
     if not user_id:
@@ -874,6 +943,13 @@ def rag_ask():
         return jsonify({'error': 'Enter a question of 1,000 characters or fewer'}), 400
     if not document_id:
         return jsonify({'error': 'Select an indexed document'}), 400
+    
+    # Prompt injection protection
+    if detect_prompt_injection(query):
+        logger.warning(f"Prompt injection detected in /api/rag/ask from user {user_id}")
+        return jsonify({'error': 'Invalid input detected'}), 400
+    
+    query = sanitize_ai_input(query, max_length=1000)
 
     try:
         result = ask_document(user_id, document_id, query, os.getenv('GEMINI_API_KEY'))
@@ -888,6 +964,7 @@ def rag_ask():
 
 
 @app.route('/register', methods=['POST'])
+@limiter.limit("5 per minute")
 def register():
     print(f"DEBUG: Register request hit. Content-Type: {request.content_type}")
     print("DEBUG: Register payload received.")
@@ -963,6 +1040,7 @@ def register():
 
 
 @app.route('/resend-registration-otp', methods=['POST'])
+@limiter.limit("3 per minute")
 def resend_registration_otp():
     data = request.get_json(silent=True) or {}
     email = str(data.get('email', '')).strip()
@@ -1025,6 +1103,7 @@ def resend_registration_otp():
 
 
 @app.route('/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login():
     print(f"DEBUG: Login request hit. Content-Type: {request.content_type}")
     print("DEBUG: Login payload received.")
@@ -1075,6 +1154,7 @@ def login():
 
 
 @app.route('/verify-registration', methods=['POST'])
+@limiter.limit("10 per minute")
 def verify_registration():
     data = request.get_json()
     email = data.get('email')
@@ -1115,6 +1195,7 @@ def verify_registration():
         return jsonify({'error': 'Invalid OTP'}), 400
 
 @app.route('/forgot-password', methods=['POST'])
+@limiter.limit("3 per minute")
 def forgot_password():
     data = request.get_json()
     email = data.get('email')
@@ -1130,12 +1211,12 @@ def forgot_password():
     if not user:
         return jsonify({'error': 'User not found'}), 404
     
-    otp = str(random.randint(100000, 999999))
+    otp = f"{secrets.randbelow(1_000_000):06d}"
     otp_expiry = datetime.datetime.now() + timedelta(minutes=10)
     
     db.users.update_one(
         {'email': email},
-        {'$set': {'otp_code': otp, 'otp_expiry': otp_expiry}}
+        {'$set': {'otp_hash': _otp_digest(email, otp), 'otp_expiry': otp_expiry}, '$unset': {'otp_code': ''}}
     )
     
     if not send_otp_email(email, otp, subject="Password Reset OTP"):
@@ -1144,6 +1225,7 @@ def forgot_password():
     return jsonify({'message': 'OTP sent to your email.'}), 200
 
 @app.route('/reset-password', methods=['POST'])
+@limiter.limit("5 per minute")
 def reset_password():
     data = request.get_json()
     email = data.get('email')
@@ -1159,10 +1241,13 @@ def reset_password():
     if not user:
         return jsonify({'error': 'User not found'}), 404
         
-    stored_otp = str(user.get('otp_code', '')).strip()
-    received_otp = str(otp).strip()
+    stored_hash = user.get('otp_hash')
+    if stored_hash:
+        otp_is_valid = hmac.compare_digest(str(stored_hash), _otp_digest(email, str(otp)))
+    else:
+        otp_is_valid = False
     
-    if stored_otp == received_otp:
+    if otp_is_valid:
         if user.get('otp_expiry') and user['otp_expiry'] > datetime.datetime.now():
             hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
             
@@ -1170,10 +1255,8 @@ def reset_password():
                 {'email': email},
                 {'$set': {
                     'password_hash': hashed_password.decode('utf-8'),
-                    'otp_code': None, 
-                    'otp_expiry': None,
-                    'is_verified': True # Verify if not already
-                }}
+                    'is_verified': True
+                }, '$unset': {'otp_hash': '', 'otp_expiry': ''}}
             )
             return jsonify({'message': 'Password reset successful. Please login.'}), 200
         else:
@@ -1438,7 +1521,7 @@ def persist_transaction_import(df, user_id, file_name, import_batch_id,
         'processed': 1,
         'created_at': datetime.datetime.now()
     })
-    cache.delete(f"dashboard_v2:{user_id}")
+    cache.delete(f"dashboard_v3:{user_id}")
     return {
         'status': 'ok',
         'imported': imported,
@@ -1466,6 +1549,7 @@ def rollback_import_batch(user_id, import_batch_id):
 
 @app.route('/upload', methods=['POST'])
 @auth_required
+@limiter.limit("10 per hour")
 def upload_csv():
     if 'file' not in request.files:
         return jsonify({'error': 'file part missing'}), 400
@@ -1876,13 +1960,23 @@ def rollback_transaction_upload():
 
 @app.route('/api/analyze', methods=['POST'])
 @auth_required
+@limiter.limit("10 per minute")
 def analyze_transaction():
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
         
-        result = genai_service.analyze_transaction(data)
+        # Prompt injection protection
+        for key, value in data.items():
+            if isinstance(value, str) and detect_prompt_injection(value):
+                logger.warning(f"Prompt injection detected in /api/analyze from user {request.user.get('user_id')}: key={key}")
+                return jsonify({'error': 'Invalid input detected'}), 400
+        
+        # Sanitize inputs
+        sanitized_data = {k: sanitize_ai_input(v) if isinstance(v, str) else v for k, v in data.items()}
+        
+        result = genai_service.analyze_transaction(sanitized_data)
         return jsonify({'analysis': result})
     except Exception as e:
         return jsonify({'error': 'Analysis failed', 'detail': str(e)}), 500
@@ -1962,6 +2056,165 @@ def delete_transaction(txn_id):
     except Exception as e:
         return jsonify({'error': 'Deletion failed', 'detail': str(e)}), 500
 
+
+def _compute_user_intelligence(db, user_id, user):
+    """
+    Compute dynamic user intelligence metrics:
+    - trust_score (0-100)
+    - security_status (Strong/Moderate/Weak)
+    - fraud_risk_level (Low/Medium/High)
+    - expense_prediction (float or None)
+    - prediction_data (list for chart)
+    """
+    now = datetime.datetime.now()
+    
+    # --- Trust Score Calculation (0-100) ---
+    # Components:
+    # 1. KYC Status (30 pts): Verified=30, Pending=10, Rejected=0
+    kyc_status = user.get('kyc_status', 'Pending')
+    kyc_score = 30 if kyc_status == 'Verified' else (10 if kyc_status == 'Pending' else 0)
+    
+    # 2. Fraud History (25 pts): No fraud flags=25, Few=15, Many=5
+    total_txns = db.transactions.count_documents({'user_id': user_id})
+    fraud_txns = db.transactions.count_documents({'user_id': user_id, 'is_fraud': 1})
+    fraud_ratio = fraud_txns / total_txns if total_txns > 0 else 0
+    if fraud_ratio == 0:
+        fraud_score = 25
+    elif fraud_ratio < 0.05:
+        fraud_score = 15
+    elif fraud_ratio < 0.15:
+        fraud_score = 10
+    else:
+        fraud_score = 5
+    
+    # 3. Transaction Consistency (20 pts): Regular activity over time
+    # Check last 90 days for activity
+    ninety_days_ago = now - timedelta(days=90)
+    recent_txns = db.transactions.count_documents({
+        'user_id': user_id,
+        'timestamp': {'$gte': ninety_days_ago}
+    })
+    if recent_txns >= 10:
+        consistency_score = 20
+    elif recent_txns >= 5:
+        consistency_score = 15
+    elif recent_txns >= 1:
+        consistency_score = 10
+    else:
+        consistency_score = 5
+    
+    # 4. Account Age (15 pts): Older accounts more trusted
+    created_at = user.get('created_at')
+    account_age_days = 0
+    if created_at:
+        if isinstance(created_at, str):
+            created_at = pd.to_datetime(created_at).to_pydatetime()
+        account_age_days = (now - created_at).days
+    if account_age_days >= 365:
+        age_score = 15
+    elif account_age_days >= 180:
+        age_score = 12
+    elif account_age_days >= 90:
+        age_score = 10
+    elif account_age_days >= 30:
+        age_score = 7
+    else:
+        age_score = 3
+    
+    # 5. Balance Tier (10 pts): Higher balance = more established
+    balance = float(user.get('balance', 0))
+    if balance >= 100000:
+        balance_score = 10
+    elif balance >= 50000:
+        balance_score = 8
+    elif balance >= 10000:
+        balance_score = 6
+    elif balance >= 1000:
+        balance_score = 4
+    else:
+        balance_score = 2
+    
+    trust_score = min(100, kyc_score + fraud_score + consistency_score + age_score + balance_score)
+    
+    # --- Security Status ---
+    # Strong: Verified + KYC Verified + No recent fraud
+    # Moderate: Verified or KYC Verified
+    # Weak: Neither
+    is_verified = user.get('is_verified', False)
+    if is_verified and kyc_status == 'Verified' and fraud_ratio == 0:
+        security_status = 'Strong'
+    elif is_verified or kyc_status == 'Verified':
+        security_status = 'Moderate'
+    else:
+        security_status = 'Weak'
+    
+    # --- Fraud Risk Level ---
+    # Based on recent fraud probability percentiles
+    ninety_days_ago = now - timedelta(days=90)
+    fraud_probs = list(db.transactions.find(
+        {'user_id': user_id, 'timestamp': {'$gte': ninety_days_ago}, 'fraud_probability': {'$ne': None}},
+        {'fraud_probability': 1, '_id': 0}
+    ))
+    if fraud_probs:
+        probs = [p['fraud_probability'] for p in fraud_probs if p.get('fraud_probability') is not None]
+        if probs:
+            p95 = sorted(probs)[int(len(probs) * 0.95)]
+            if p95 >= 0.7:
+                fraud_risk_level = 'High'
+            elif p95 >= 0.3:
+                fraud_risk_level = 'Medium'
+            else:
+                fraud_risk_level = 'Low'
+        else:
+            fraud_risk_level = 'Low'
+    else:
+        fraud_risk_level = 'Low'
+    
+    # --- Expense Prediction (Simple Moving Average of Monthly Debits) ---
+    # Aggregate monthly debit totals for last 6 months
+    six_months_ago = now - timedelta(days=180)
+    monthly_pipeline = [
+        {'$match': {
+            'user_id': user_id,
+            'direction': 'debit',
+            'timestamp': {'$gte': six_months_ago}
+        }},
+        {'$group': {
+            '_id': {'$dateToString': {'format': '%Y-%m', 'date': '$timestamp'}},
+            'total': {'$sum': '$transaction_amount'}
+        }},
+        {'$sort': {'_id': 1}}
+    ]
+    monthly_data = list(db.transactions.aggregate(monthly_pipeline))
+    
+    expense_prediction = None
+    prediction_data = []
+    
+    if len(monthly_data) >= 3:
+        # Use last 3 complete months for prediction
+        monthly_totals = [m['total'] for m in monthly_data]
+        expense_prediction = sum(monthly_totals[-3:]) / 3
+        
+        # Build prediction_data for chart (last 6 months actual + next month predicted)
+        for m in monthly_data[-6:]:
+            prediction_data.append({
+                'date': f"{m['_id']}-01",
+                'actual': m['total'],
+                'predicted': None
+            })
+        # Add next month prediction
+        from dateutil.relativedelta import relativedelta
+        last_month = pd.to_datetime(monthly_data[-1]['_id'] + '-01')
+        next_month = last_month + relativedelta(months=1)
+        prediction_data.append({
+            'date': next_month.strftime('%Y-%m-%d'),
+            'actual': None,
+            'predicted': round(expense_prediction, 2)
+        })
+    
+    return trust_score, security_status, fraud_risk_level, expense_prediction, prediction_data
+
+
 @app.route('/api/dashboard', methods=['GET'])
 @auth_required
 def get_dashboard_data():
@@ -1969,7 +2222,7 @@ def get_dashboard_data():
         user_id = request.user['user_id']
         
         # 0. CACHE CHECK
-        cache_key = f"dashboard_v2:{user_id}"
+        cache_key = f"dashboard_v3:{user_id}"
         cached_res = cache.get(cache_key)
         if cached_res:
             return jsonify(cached_res)
@@ -1994,7 +2247,8 @@ def get_dashboard_data():
         }
 
         # 3. Chart Data (Last 365 days)
-        thirty_days_ago = datetime.datetime.now() - timedelta(days=365)
+        now = datetime.datetime.now()
+        thirty_days_ago = now - timedelta(days=365)
         pipeline = [
             {
                 '$match': {
@@ -2012,6 +2266,10 @@ def get_dashboard_data():
         ]
         chart_data_raw = list(db.transactions.aggregate(pipeline))
         chart_data = [{'date': item['_id'], 'value': item['value']} for item in chart_data_raw]
+        monthly_volume = {}
+        for item in chart_data:
+            month_key = item['date'][:7]
+            monthly_volume[month_key] = monthly_volume.get(month_key, 0.0) + item['value']
         
         # Cash flow is only classified when the imported record has a known direction.
         flow_pipeline = [
@@ -2025,7 +2283,8 @@ def get_dashboard_data():
                     'date': {'$dateToString': {'format': '%Y-%m-%d', 'date': '$timestamp'}},
                     'direction': '$direction'
                 },
-                'total': {'$sum': '$transaction_amount'}
+                'total': {'$sum': '$transaction_amount'},
+                'count': {'$sum': 1}
             }},
             {'$sort': {'_id.date': 1}}
         ]
@@ -2033,8 +2292,30 @@ def get_dashboard_data():
         for item in db.transactions.aggregate(flow_pipeline):
             date_key = item['_id']['date']
             flow_by_date.setdefault(date_key, {'date': date_key, 'income': 0.0, 'expense': 0.0})
-            flow_by_date[date_key]['income' if item['_id']['direction'] == 'credit' else 'expense'] = item['total']
+            if item['_id']['direction'] == 'credit':
+                flow_by_date[date_key]['income'] = item['total']
+            else:
+                flow_by_date[date_key]['expense'] = item['total']
         income_expense_data = list(flow_by_date.values())
+
+        current_month = pd.Period(now, freq='M')
+        forecast_periods = [current_month - offset for offset in (3, 2, 1)]
+        forecast_keys = [period.strftime('%Y-%m') for period in forecast_periods]
+        transaction_volume_prediction = None
+        prediction_data = []
+        if all(month in monthly_volume for month in forecast_keys):
+            transaction_volume_prediction = sum(monthly_volume[month] for month in forecast_keys) / 3
+            chart_months = sorted(monthly_volume)[-6:]
+            prediction_data = [
+                {'date': f'{month}-01', 'actual': monthly_volume[month], 'predicted': None}
+                for month in chart_months
+            ]
+            next_month = current_month + 1
+            prediction_data.append({
+                'date': f'{next_month.strftime("%Y-%m")}-01',
+                'actual': None,
+                'predicted': round(transaction_volume_prediction, 2)
+            })
 
         # Spending categories use transaction categories, not payment channels.
         pipeline_cat = [
@@ -2067,8 +2348,6 @@ def get_dashboard_data():
         fraud_trend_raw = list(db.transactions.aggregate(pipeline_fraud))
         fraud_trend_data = [{'date': item['_id'], 'count': item['count']} for item in fraud_trend_raw]
 
-        prediction_data = []
-
         # 4. Recent Alerts
         alerts_cursor = db.transactions.find(
             {'user_id': user_id, 'is_fraud': 1}
@@ -2083,27 +2362,32 @@ def get_dashboard_data():
                  'channel': a.get('channel')
              })
 
-        # 5. DYNAMIC TRUST SCORE
-        # No validated forecasting model exists for account spending.
+        # Compute dynamic intelligence metrics
+        trust_score, security_status, fraud_risk_level, expense_prediction, intelligence_prediction_data = _compute_user_intelligence(db, user_id, user)
+
         intelligence = {
-            'expense_prediction': None,
-            'fraud_risk_level': 'Not assessed'
+            'transaction_volume_prediction': round(transaction_volume_prediction, 2) if transaction_volume_prediction is not None else None,
+            'prediction_method': 'average of the last three completed months of transaction volume',
+            'fraud_risk_level': fraud_risk_level,
+            'expense_prediction': round(expense_prediction, 2) if expense_prediction is not None else None,
+            'trust_score': trust_score,
+            'security_status': security_status
         }
 
         response = {
             'user_stats': {
-                'balance': None,
+                'balance': user.get('balance'),
                 'kyc_status': user.get('kyc_status', 'Pending'),
-                'trust_score': None,
-                'security_status': None,
-                'fraud_risk_level': 'Not assessed'
+                'trust_score': trust_score,
+                'security_status': security_status,
+                'fraud_risk_level': fraud_risk_level
             },
             'counts': counts,
             'chart_data': chart_data,
             'income_expense_data': income_expense_data,
             'category_data': category_data,
             'fraud_trend_data': fraud_trend_data,
-            'prediction_data': prediction_data,
+            'prediction_data': intelligence_prediction_data if intelligence_prediction_data else prediction_data,
             'recent_alerts': recent_alerts,
             'intelligence': intelligence
         }
@@ -2119,6 +2403,7 @@ def get_dashboard_data():
 
 @app.route('/api/transfer', methods=['POST'])
 @auth_required
+@limiter.limit("5 per minute")
 def transfer_funds():
     try:
         data = request.get_json()
@@ -2168,6 +2453,7 @@ def transfer_funds():
 
 @app.route('/api/loan/apply', methods=['POST'])
 @auth_required
+@limiter.limit("5 per minute")
 def apply_loan():
     try:
         data = request.get_json()
@@ -2190,6 +2476,7 @@ def apply_loan():
 
 @app.route('/api/insurance/apply', methods=['POST'])
 @auth_required
+@limiter.limit("5 per minute")
 def apply_insurance():
     try:
         data = request.get_json()
@@ -2374,6 +2661,7 @@ def serve_uploaded_file(filename):
 
 @app.route('/api/predict', methods=['POST'])
 @auth_required
+@limiter.limit("20 per minute")
 def predict_fraud():
     try:
         global ml_model, encoder
@@ -2415,6 +2703,7 @@ def predict_fraud():
 
 @app.route('/api/retrain', methods=['POST'])
 @auth_required
+@limiter.limit("2 per hour")
 def retrain_model():
     logger.info(f"Retrain requested by user: {request.user.get('email')}")
     try:
@@ -2440,10 +2729,20 @@ def retrain_model():
 
 @app.route('/api/chat', methods=['POST'])
 @auth_required
+@limiter.limit("20 per minute")
 def chat_advisor():
     try:
         data = request.get_json()
         user_query = data.get('query')
+        if not user_query or not isinstance(user_query, str):
+            return jsonify({'error': 'Query is required'}), 400
+        
+        # Prompt injection protection
+        if detect_prompt_injection(user_query):
+            logger.warning(f"Prompt injection detected in /api/chat from user {request.user.get('user_id')}")
+            return jsonify({'error': 'Invalid input detected'}), 400
+        
+        user_query = sanitize_ai_input(user_query, max_length=1000)
         user_id = request.user['user_id']
         
         db = get_db()
@@ -2664,6 +2963,7 @@ if __name__ == '__main__':
     
 @app.route('/api/analyze', methods=['POST'])
 @auth_required
+@limiter.limit("10 per minute")
 def analyze_transaction_api():
     """
     Analyzes a specific transaction using GenAI to provide risk assessment and safety tips.
@@ -2674,13 +2974,22 @@ def analyze_transaction_api():
         if not data:
             return jsonify({'error': 'No data provided'}), 400
         
+        # Prompt injection protection
+        for key, value in data.items():
+            if isinstance(value, str) and detect_prompt_injection(value):
+                logger.warning(f"Prompt injection detected in /api/analyze (v2) from user {request.user.get('user_id')}: key={key}")
+                return jsonify({'error': 'Invalid input detected'}), 400
+        
+        # Sanitize inputs
+        sanitized_data = {k: sanitize_ai_input(v) if isinstance(v, str) else v for k, v in data.items()}
+        
         # Prepare transaction dictionary for service
         txn_data = {
-            'amount': data.get('amount'),
-            'channel': data.get('channel'),
-            'account_age': data.get('account_age', 'Unknown'),
-            'kyc_verified': data.get('kyc_verified', 'Unknown'),
-            'timestamp': data.get('timestamp')
+            'amount': sanitized_data.get('amount'),
+            'channel': sanitized_data.get('channel'),
+            'account_age': sanitized_data.get('account_age', 'Unknown'),
+            'kyc_verified': sanitized_data.get('kyc_verified', 'Unknown'),
+            'timestamp': sanitized_data.get('timestamp')
         }
         
         # Re-use existing GenAIService logic if possible or call it directly
@@ -2717,6 +3026,7 @@ def investments_page():
 
 @app.route('/api/investments', methods=['GET', 'POST'])
 @auth_required
+@limiter.limit("30 per minute")
 def handle_investments():
     db = get_db()
     if request.method == 'GET':
@@ -2758,6 +3068,7 @@ def handle_investments():
 
 @app.route('/api/investments/delete', methods=['POST'])
 @auth_required
+@limiter.limit("10 per minute")
 def delete_investment():
     db = get_db()
     data = request.get_json(silent=True) or {}
@@ -2778,6 +3089,7 @@ def delete_investment():
 
 @app.route('/api/investments/analyze', methods=['POST'])
 @auth_required
+@limiter.limit("5 per minute")
 def analyze_portfolio_route():
     db = get_db()
     user_id = request.user['user_id']
@@ -2792,6 +3104,10 @@ def analyze_portfolio_route():
     
     risk_profile = user.get('risk_profile', 'Moderate')
     user_name = user.get('name', 'Investor')
+    
+    # Sanitize user-controlled data before sending to AI
+    risk_profile = sanitize_ai_input(risk_profile, max_length=50)
+    user_name = sanitize_ai_input(user_name, max_length=100)
     
     tips = genai_service.analyze_portfolio(portfolio_summary, risk_profile, user_name)
     return jsonify({'tips': tips})
@@ -2836,6 +3152,7 @@ def _validated_loan_inputs(data):
 
 @app.route('/api/loan/emi', methods=['POST'])
 @auth_required
+@limiter.limit("20 per minute")
 def calculate_loan_emi():
     data = request.get_json(silent=True) or {}
     try:
@@ -2856,6 +3173,7 @@ def calculate_loan_emi():
 
 @app.route('/api/check-loan-eligibility', methods=['POST'])
 @auth_required
+@limiter.limit("10 per minute")
 def check_loan_eligibility():
     data = request.get_json(silent=True) or {}
     try:

@@ -72,7 +72,7 @@ function renderTopCards(stats, counts) {
     // Security Status Color
     const secStatus = document.getElementById('security-status');
     secStatus.innerText = stats.security_status || 'Not assessed';
-    secStatus.style.color = stats.security_status ? (stats.security_status === 'Strong' ? '#2ecc71' : (stats.security_status === 'Moderate' ? '#f1c40f' : '#e74c3c')) : 'var(--text-muted)';
+    secStatus.style.color = stats.security_status === 'Verified' ? '#2ecc71' : (stats.security_status === 'Verification pending' ? '#f1c40f' : 'var(--text-muted)');
 
     document.getElementById('current-balance').innerText = stats.balance === null || stats.balance === undefined
         ? 'Not available'
@@ -411,7 +411,7 @@ function renderPredictionChart(data) {
 
     const labels = data.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
     const actual = data.map(d => d.actual);
-    const predicted = data.map(d => d.predicted);
+    const predicted = data.map(d => d.predicted ?? null);
 
     new Chart(ctx, {
         type: 'line',

@@ -1,10 +1,12 @@
 import contextlib
 import io
 import unittest
+from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import jwt
+import pandas as pd
 import pymongo
 from bson.objectid import ObjectId
 
@@ -36,18 +38,32 @@ class FinancialIntegrityTests(unittest.TestCase):
     def auth_headers(self):
         return {'Authorization': 'Bearer ' + self.token}
 
-    def test_dashboard_never_invents_income_forecast_or_balance(self):
+    def test_dashboard_uses_profile_values_and_withholds_forecast_without_history(self):
         self.db.transactions.count_documents.return_value = 0
+        # 5 aggregate calls: chart_data, income_expense, category, fraud_trend, monthly_data (from _compute_user_intelligence)
         self.db.transactions.aggregate.side_effect = [
-            [{'_id': '2026-10-01', 'value': 100}],
+            [{'_id': '2026-10-01', 'value': 100}],  # chart_data
             [
                 {'_id': {'date': '2026-10-01', 'direction': 'credit'}, 'total': 80},
                 {'_id': {'date': '2026-10-01', 'direction': 'debit'}, 'total': 30},
-            ],
-            [{'_id': 'Food', 'total': 30}],
-            [],
+            ],  # income_expense
+            [{'_id': 'Food', 'total': 30}],  # category_data
+            [],  # fraud_trend
+            [],  # monthly_data (from _compute_user_intelligence)
         ]
-        self.db.transactions.find.return_value.sort.return_value.limit.return_value = []
+        # Mock find for recent alerts (empty)
+        alerts_find_mock = Mock()
+        alerts_find_mock.sort.return_value.limit.return_value = []
+        # Mock find for fraud_probs in _compute_user_intelligence - returns empty list when list() is called
+        fraud_find_mock = Mock()
+        fraud_find_mock.__iter__ = Mock(return_value=iter([]))
+        # Need to handle two different find calls - one for alerts, one for fraud_probs
+        def find_side_effect(*args, **kwargs):
+            query = args[0] if args else kwargs.get('filter', {})
+            if 'is_fraud' in str(query):
+                return alerts_find_mock
+            return fraud_find_mock
+        self.db.transactions.find.side_effect = find_side_effect
         with patch.object(application, 'get_db', return_value=self.db), \
              patch.object(application.cache, 'get', return_value=None), \
              patch.object(application.cache, 'set'):
@@ -60,8 +76,58 @@ class FinancialIntegrityTests(unittest.TestCase):
         self.assertEqual(data['category_data'][0]['category'], 'Food')
         self.assertEqual(data['prediction_data'], [])
         self.assertIsNone(data['intelligence']['expense_prediction'])
-        self.assertIsNone(data['user_stats']['balance'])
-        self.assertIsNone(data['user_stats']['trust_score'])
+        self.assertEqual(data['user_stats']['balance'], 250)
+        self.assertEqual(data['user_stats']['trust_score'], 45)
+        self.assertEqual(data['user_stats']['security_status'], 'Weak')
+
+    def test_dashboard_calculates_forecast_from_three_completed_debit_months(self):
+        current_month = pd.Period(datetime.now(), freq='M')
+        debit_rows = [
+            {'_id': {'date': f'{(current_month - offset).strftime("%Y-%m")}-12', 'direction': 'debit'}, 'total': amount}
+            for offset, amount in ((3, 300), (2, 600), (1, 900))
+        ]
+        # monthly_data format for _compute_user_intelligence: _id is string like '2026-07'
+        monthly_data = [
+            {'_id': (current_month - 3).strftime('%Y-%m'), 'total': 300},
+            {'_id': (current_month - 2).strftime('%Y-%m'), 'total': 600},
+            {'_id': (current_month - 1).strftime('%Y-%m'), 'total': 900},
+        ]
+        self.db.users.find_one.return_value.update({'is_verified': True, 'trust_score': 62, 'security_status': 'Strong', 'fraud_risk_level': 'Medium'})
+        self.db.transactions.count_documents.return_value = 0
+        # 5 aggregate calls: chart_data, income_expense, category, fraud_trend, monthly_data (from _compute_user_intelligence)
+        self.db.transactions.aggregate.side_effect = [
+            [],  # chart_data
+            debit_rows + [{'_id': {'date': f'{(current_month - 1).strftime("%Y-%m")}-12', 'direction': 'credit'}, 'total': 2500}],  # income_expense
+            [],  # category_data
+            [],  # fraud_trend
+            monthly_data,  # monthly_data (from _compute_user_intelligence)
+        ]
+        # Mock find for recent alerts (empty)
+        alerts_find_mock = Mock()
+        alerts_find_mock.sort.return_value.limit.return_value = []
+        # Mock find for fraud_probs in _compute_user_intelligence - returns empty list when list() is called
+        fraud_find_mock = Mock()
+        fraud_find_mock.__iter__ = Mock(return_value=iter([]))
+        # Need to handle two different find calls - one for alerts, one for fraud_probs
+        def find_side_effect(*args, **kwargs):
+            query = args[0] if args else kwargs.get('filter', {})
+            if 'is_fraud' in str(query):
+                return alerts_find_mock
+            return fraud_find_mock
+        self.db.transactions.find.side_effect = find_side_effect
+        with patch.object(application, 'get_db', return_value=self.db), \
+             patch.object(application.cache, 'get', return_value=None), \
+             patch.object(application.cache, 'set'):
+            response = self.client.get('/api/dashboard', headers=self.auth_headers())
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data['intelligence']['expense_prediction'], 600)
+        self.assertEqual(data['prediction_data'][-1]['predicted'], 600)
+        self.assertIsNone(data['prediction_data'][-1]['actual'])
+        self.assertEqual(data['user_stats']['trust_score'], 45)
+        self.assertEqual(data['user_stats']['security_status'], 'Moderate')
+        self.assertEqual(data['user_stats']['fraud_risk_level'], 'Low')
 
     def test_budget_aggregates_only_current_month_debits_and_uses_saved_limit(self):
         self.db.transactions.aggregate.return_value = [{'_id': 'Food', 'total': 42.5}]
