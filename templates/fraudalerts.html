@@ -69,7 +69,7 @@
       if (!token) return;
 
       try {
-        const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+        const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
         const res = await fetch(API_BASE + '/api/alerts', {
           headers: { 'Authorization': 'Bearer ' + token }
         });
@@ -117,7 +117,7 @@
       resultDiv.innerHTML = '<div style="text-align: center; padding: 1rem;"><i class="fas fa-spinner fa-spin"></i> Analyzing with AI...</div>';
 
       try {
-        const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin.replace(/:\d+$/, ':5000');
+        const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
         const res = await fetch(API_BASE + '/api/analyze', {
           method: 'POST',
           headers: {

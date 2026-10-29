@@ -64,6 +64,31 @@ class UploadPipelineTests(unittest.TestCase):
         self.assertTrue(pd.isna(normalized.loc[0, 'fraud_probability']))
         self.assertTrue(pd.isna(normalized.loc[0, 'timestamp']))
 
+    def test_bank_statement_layout_keeps_direction_amounts_and_day_first_dates(self):
+        statement = pd.DataFrame({
+            'Date': ['01/09/26', '05/09/26', '06/09/26'],
+            'Narration': ['NEFT-ACME-SALARY', 'IMPS-RENT', 'BALANCE B/F'],
+            'Chq./Ref.No.': ['R1', 'R2', 'R3'],
+            'Withdrawal Amt.': ['', '22,000.00', ''],
+            'Deposit Amt.': ['85,000.00', '', ''],
+            'Closing Balance': ['1,85,000.00', '1,63,000.00', '1,63,000.00'],
+        })
+        normalized, invalid = application.normalize_uploaded_transactions(statement, 'owner-1', {}, return_invalid=True)
+        self.assertEqual(list(normalized['transaction_id']), ['R1', 'R2'])
+        self.assertEqual(list(normalized['direction']), ['credit', 'debit'])
+        self.assertEqual(list(normalized['transaction_amount']), [85000.0, 22000.0])
+        self.assertEqual(normalized.loc[0, 'description'], 'NEFT-ACME-SALARY')
+        self.assertEqual(normalized.loc[0, 'timestamp'], datetime(2026, 9, 1))
+        self.assertEqual(len(invalid), 1)  # the row with neither a withdrawal nor a deposit
+
+    def test_missing_currency_defaults_to_account_currency(self):
+        no_column = application.normalize_uploaded_transactions(pd.DataFrame([{'amount': 25}]), 'owner-1')
+        self.assertEqual(no_column.loc[0, 'currency'], 'INR')
+
+        mixed = pd.DataFrame([{'amount': 25, 'currency': 'USD'}, {'amount': 30, 'currency': None}, {'amount': 5, 'currency': ' '}])
+        normalized = application.normalize_uploaded_transactions(mixed, 'owner-1', {'currency': 'eur'})
+        self.assertEqual(list(normalized['currency']), ['USD', 'EUR', 'EUR'])
+
     def test_numeric_kyc_flags_are_normalized(self):
         frame = pd.DataFrame([{'amount': 25, 'kyc_verified': 1.0}])
         normalized = application.normalize_uploaded_transactions(frame, 'owner-1')
@@ -151,6 +176,47 @@ class UploadPipelineTests(unittest.TestCase):
             )
         self.assertEqual(forbidden.status_code, 410)
         self.assertEqual(len(database.transactions.operations), 1)
+
+    def test_high_risk_import_triggers_fraud_alert_email(self):
+        df = pd.DataFrame([{
+            'transaction_id': 'TXN-1', 'customer_id': 'owner-1', 'kyc_verified': 0, 'account_age_days': 1,
+            'transaction_amount': 99999.0, 'channel': 'ATM', 'timestamp': pd.NaT, 'direction': 'debit',
+            'category': 'Uncategorized', 'currency': 'INR', 'description': None, 'is_fraud': 1,
+            'fraud_probability': 0.95, 'anomaly_score': 0.9, 'risk_score': 92.0, 'risk_level': 'High',
+            'risk_reasons': ['Fraud model score 95% is above the 50% alert threshold'], '_source_row': 2,
+        }])
+        database = Mock()
+        database.transactions.bulk_write.return_value = SimpleNamespace(upserted_count=1, modified_count=0, matched_count=0)
+        database.users.find_one.return_value = {'email': 'owner@example.test'}
+
+        with patch.object(application, 'get_db', return_value=database), \
+             patch.object(application, 'send_fraud_alert_email', return_value=True) as alert, \
+             patch.object(application, 'invalidate_user_cache'):
+            application.persist_transaction_import(df, 'owner-1', 'ledger.csv', 'batch-1', 1, 0, 0)
+
+        alert.assert_called_once()
+        email, rows, file_name = alert.call_args.args
+        self.assertEqual(email, 'owner@example.test')
+        self.assertEqual(rows[0]['transaction_id'], 'TXN-1')
+        self.assertEqual(file_name, 'ledger.csv')
+
+    def test_low_risk_import_does_not_send_fraud_alert_email(self):
+        df = pd.DataFrame([{
+            'transaction_id': 'TXN-2', 'customer_id': 'owner-1', 'kyc_verified': 1, 'account_age_days': 400,
+            'transaction_amount': 50.0, 'channel': 'UPI', 'timestamp': pd.NaT, 'direction': 'debit',
+            'category': 'Uncategorized', 'currency': 'INR', 'description': None, 'is_fraud': 0,
+            'fraud_probability': 0.01, 'anomaly_score': 0.01, 'risk_score': 2.0, 'risk_level': 'Low',
+            'risk_reasons': [], '_source_row': 2,
+        }])
+        database = Mock()
+        database.transactions.bulk_write.return_value = SimpleNamespace(upserted_count=1, modified_count=0, matched_count=0)
+
+        with patch.object(application, 'get_db', return_value=database), \
+             patch.object(application, 'send_fraud_alert_email', return_value=True) as alert, \
+             patch.object(application, 'invalidate_user_cache'):
+            application.persist_transaction_import(df, 'owner-1', 'ledger.csv', 'batch-1', 1, 0, 0)
+
+        alert.assert_not_called()
 
 
 if __name__ == '__main__':

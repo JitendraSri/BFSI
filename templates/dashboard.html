@@ -25,37 +25,37 @@
     <div class="top-cards-grid">
       <!-- Card 1: Total Transactions -->
       <div class="glass stat-card-mini">
-        <h3>Total Transactions</h3>
+        <h3>Total Transactions <span class="info-icon" data-tip="Count of all transactions imported from your bank statements.">ⓘ</span></h3>
         <div class="value" id="total-txns">-</div>
         <i class="fas fa-exchange-alt icon-bg"></i>
       </div>
 
       <!-- Card 2: Suspicious Activity -->
       <div class="glass stat-card-mini" style="border-bottom: 3px solid #e74c3c;">
-        <h3>Model-Flagged Transactions</h3>
+        <h3>Model-Flagged Transactions <span class="info-icon" data-tip="Transactions the ML fraud model classified as high-risk. Review in Fraud Alerts.">ⓘ</span></h3>
         <div class="value" id="suspicious-activity" style="color: #e74c3c">-</div>
         <i class="fas fa-exclamation-triangle icon-bg"></i>
       </div>
 
-      <!-- Card 3: Pending Verifications -->
+      <!-- Card 3: Disputed Transactions -->
       <div class="glass stat-card-mini" style="border-bottom: 3px solid #f1c40f;">
-        <h3>Pending Verifications</h3>
-        <div class="value" id="pending-verifications">-</div>
-        <i class="fas fa-user-clock icon-bg"></i>
+        <h3>Disputed Transactions <span class="info-icon" data-tip="Transactions you have raised a dispute on. Track their resolution status in Fraud Alerts.">ⓘ</span></h3>
+        <div class="value" id="disputed-txns">-</div>
+        <i class="fas fa-flag icon-bg"></i>
       </div>
 
       <!-- Card 4: Security Status -->
       <div class="glass stat-card-mini">
-        <h3>Email Verification</h3>
+        <h3>Security Status <span class="info-icon" data-tip="Strong = verified email + no fraud. Moderate = verified but some flagged transactions. Weak = email not verified.">ⓘ</span></h3>
         <div class="value" id="security-status" style="font-size: 1.4rem;">-</div>
         <i class="fas fa-shield-alt icon-bg"></i>
       </div>
 
-      <!-- Card 5: Current Balance -->
+      <!-- Card 5: Net Cash Flow -->
       <div class="glass stat-card-mini"
         style="background: linear-gradient(135deg, rgba(78, 84, 200, 0.4), rgba(143, 148, 251, 0.4));">
-        <h3>Current Balance</h3>
-        <div class="value" id="current-balance">-</div>
+        <h3>Net Cash Flow <span class="info-icon" data-tip="Total credits minus total debits over the last 30 days from your imported transactions.">ⓘ</span></h3>
+        <div class="value" id="net-cash-flow">-</div>
         <i class="fas fa-wallet icon-bg"></i>
       </div>
     </div>
@@ -67,7 +67,7 @@
 
       <!-- Row 1: Volume (Major) + Trust (Status) -->
       <div class="glass card col-span-8">
-        <h3>Transaction Volume</h3>
+        <h3>Transaction Volume <span class="info-icon" data-tip="Monthly count of all your transactions. Hover bars to see the exact number per month.">ⓘ</span></h3>
         <div class="chart-container" style="height: 350px;">
           <canvas id="txnVolumeChart"></canvas>
         </div>
@@ -75,7 +75,7 @@
 
       <div class="glass card trust-profile col-span-4"
         style="text-align: center; display:flex; flex-direction:column; justify-content:center;">
-        <h3>Trust Score</h3>
+        <h3>Trust Score <span class="info-icon" data-tip="Composite account health score (0–100) based on fraud ratio, data completeness, KYC status and account age.">ⓘ</span></h3>
         <div class="trust-gauge-container"
           style="position: relative; height: 200px; display: flex; justify-content: center; align-items: center;">
           <canvas id="trustGaugeChart" style="max-height: 100%;"></canvas>
@@ -92,22 +92,22 @@
 
       <!-- Row 2: Incom/Exp (Left) + Categories (Right) -->
       <div class="glass card col-span-6">
-        <h3>Income vs Expense</h3>
+        <h3>Income vs Expense <span class="info-icon" data-tip="Monthly credit (income) vs debit (expense) breakdown. Helps identify months where spending exceeded income.">ⓘ</span></h3>
         <div class="chart-container" style="height: 250px;">
           <canvas id="incomeExpenseChart"></canvas>
         </div>
       </div>
 
       <div class="glass card col-span-6">
-        <h3>Spending Categories</h3>
-        <div class="chart-container" style="height: 250px;">
+        <h3>Spending Categories <span class="info-icon" data-tip="Debit transactions grouped by category (Groceries, Dining, Transport, etc.) from your imported data.">ⓘ</span></h3>
+        <div class="chart-container" style="height: 320px;">
           <canvas id="categoryChart"></canvas>
         </div>
       </div>
 
       <!-- Row 3: Fraud (Left) + AI Pred (Right) -->
       <div class="glass card col-span-6">
-        <h3>Fraud Alerts Trend</h3>
+        <h3>Fraud Alerts Trend <span class="info-icon" data-tip="Monthly count of transactions flagged as fraud by the ML model. A transaction is flagged when the model scores it above the risk threshold based on: amount (unusually high), channel (ATM/overseas), time (midnight), and spending pattern deviation. Rising trend = review Fraud Alerts urgently.">ⓘ</span></h3>
         <div class="chart-container" style="height: 250px;">
           <canvas id="fraudTrendChart"></canvas>
         </div>
@@ -115,7 +115,7 @@
 
       <!-- Row 3: AI Prediction (Right) -->
       <div class="glass card col-span-6">
-        <h3>Spending Forecast</h3>
+        <h3>Spending Forecast <span class="info-icon" data-tip="3-month Simple Moving Average on your monthly debits. Dashed line = predicted next-month spend.">ⓘ</span></h3>
         <div class="chart-container" style="height: 250px;">
           <canvas id="predictionChart"></canvas>
         </div>
@@ -127,17 +127,22 @@
     <div class="dashboard-grid">
       <!-- Intelligence Snapshot -->
       <div class="glass card">
-        <h2>Intelligence Snapshot</h2>
-        <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 1rem;">
-          <div style="flex: 1; min-width: 150px; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px;">
-            <div style="color: #aaa; margin-bottom: 5px;">Next Month Expense Forecast</div>
-            <div style="font-size: 1.8rem; font-weight: bold;" id="expense-pred">-</div>
-            <div style="font-size: 0.8rem; color: #aaa;">Average of the last three completed debit months</div>
+        <h2>Intelligence Snapshot <span class="info-icon" data-tip="AI-computed summaries: forecast uses moving average on your debits, fraud risk from ML model scores.">ⓘ</span></h2>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+          <div style="flex: 1; min-width: 130px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px;">
+            <div style="color: #aaa; margin-bottom: 4px; font-size:0.8rem;">Next Month Forecast</div>
+            <div style="font-size: 1.4rem; font-weight: bold;" id="expense-pred">-</div>
+            <div style="font-size: 0.75rem; color: #aaa;" id="expense-pred-note">Based on all available debit months</div>
           </div>
-          <div style="flex: 1; min-width: 150px; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px;">
-            <div style="color: #aaa; margin-bottom: 5px;">Account-Level Fraud Risk</div>
-            <div style="font-size: 1.8rem; font-weight: bold;" id="fraud-risk">-</div>
-            <div style="font-size: 0.8rem; color: #aaa;">Not assessed from account data</div>
+          <div style="flex: 1; min-width: 130px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px;">
+            <div style="color: #aaa; margin-bottom: 4px; font-size:0.8rem;">Account Fraud Risk</div>
+            <div style="font-size: 1.4rem; font-weight: bold;" id="fraud-risk">-</div>
+            <div style="font-size: 0.75rem; color: #aaa;" id="fraud-risk-note">Based on flagged transactions</div>
+          </div>
+          <div style="flex: 1; min-width: 130px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px;">
+            <div style="color: #aaa; margin-bottom: 4px; font-size:0.8rem;">Avg Monthly Spend</div>
+            <div style="font-size: 1.4rem; font-weight: bold;" id="avg-spend">-</div>
+            <div style="font-size: 0.75rem; color: #aaa;">Debit transactions average</div>
           </div>
         </div>
       </div>
@@ -145,12 +150,23 @@
       <!-- Recent Alerts (Preview) -->
       <div class="glass card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="margin: 0;">Recent Alerts</h3>
-          <a href="fraudalerts.html" style="font-size: 0.8rem; color: var(--secondary);">View All</a>
+          <h3 style="margin: 0;">Recent Alerts <span class="info-icon" data-tip="Latest high-risk transactions flagged by the ML model. Click 'View All' for full history and dispute options.">ⓘ</span></h3>
+          <a href="/fraud-alerts" style="font-size: 0.8rem; color: var(--secondary);">View All</a>
         </div>
         <div id="alerts-list">
           <div class="text-center text-muted">Loading alerts...</div>
         </div>
+      </div>
+    </div>
+
+    <!-- 4. Recurring Payments -->
+    <div class="glass card" style="margin-top: 1.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h3 style="margin:0;">🔄 Recurring Payments <span class="info-icon" data-tip="Subscriptions and bills auto-detected by matching similar description + amount across multiple months.">ⓘ</span></h3>
+        <span style="font-size:0.75rem; color:#aaa;">Auto-detected from your transactions</span>
+      </div>
+      <div id="recurring-list" style="display:flex; flex-wrap:wrap; gap:0.75rem;">
+        <div class="text-muted" style="font-size:0.85rem;">Loading...</div>
       </div>
     </div>
 

@@ -1,0 +1,14 @@
+[
+  {
+    "trained_at": "2026-10-27T21:24:45",
+    "fraud_f1": 0.7792207792207793,
+    "fraud_precision": 0.8108108108108109,
+    "fraud_recall": 0.75,
+    "roc_auc": 0.997901921132457,
+    "pr_auc": 0.9167240755171193,
+    "hybrid_f1": 0.7951807228915663,
+    "decision_threshold": 0.66,
+    "dataset_size": 10090,
+    "fraud_rate": 0.0199
+  }
+]

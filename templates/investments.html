@@ -46,12 +46,82 @@
         }
 
         .ai-box {
-            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1) 0%, rgba(142, 68, 173, 0.1) 100%);
-            border: 1px solid rgba(52, 152, 219, 0.3);
-            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.08) 0%, rgba(142, 68, 173, 0.08) 100%);
+            border: 1px solid rgba(52, 152, 219, 0.35);
+            padding: 1.75rem;
             border-radius: 12px;
-            margin-top: 1rem;
+            margin-top: 1.5rem;
         }
+
+        .ai-box .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1.1rem;
+            color: #60a5fa;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(96, 165, 250, 0.2);
+        }
+
+        /* Point-wise advice rendering */
+        .ai-content h2, .ai-content h3, .ai-content h4 {
+            color: #60a5fa;
+            margin: 1.1rem 0 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .ai-content h2:first-child, .ai-content h3:first-child { margin-top: 0; }
+        .ai-content p {
+            color: #ccc;
+            font-size: 0.88rem;
+            line-height: 1.7;
+            margin-bottom: 0.6rem;
+        }
+        .ai-content ul, .ai-content ol {
+            padding-left: 1.4rem;
+            margin: 0.5rem 0 0.9rem;
+        }
+        .ai-content li {
+            color: #ddd;
+            font-size: 0.88rem;
+            line-height: 1.75;
+            margin-bottom: 0.35rem;
+        }
+        .ai-content li::marker { color: #60a5fa; }
+        .ai-content strong { color: #fff; }
+        .ai-content em { color: #f59e0b; font-style: normal; }
+        .ai-content hr {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin: 1rem 0;
+        }
+        .ai-content .point-block {
+            background: rgba(255,255,255,0.03);
+            border-left: 3px solid #3b82f6;
+            border-radius: 0 8px 8px 0;
+            padding: 0.65rem 1rem;
+            margin-bottom: 0.6rem;
+        }
+        .ai-loading {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #888;
+            font-size: 0.9rem;
+            padding: 0.5rem 0;
+        }
+        .ai-loading::before {
+            content: '';
+            width: 18px; height: 18px;
+            border: 2px solid rgba(96,165,250,0.3);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .form-group {
             margin-bottom: 1rem;
@@ -180,21 +250,22 @@
                     </form>
                 </div>
 
-                <!-- AI Output Box -->
-                <div class="ai-box" id="aiResult" style="display: none;">
-                    <h3 class="ai-header">
-                        <i class="fas fa-robot"></i> Cortex Advisor
-                    </h3>
-                    <div id="aiContent" class="ai-content"></div>
-                </div>
             </div>
+        </div>
+
+        <!-- Cortex Advisor — full-width, below holdings + form -->
+        <div class="ai-box" id="aiResult" style="display: none;">
+            <div class="ai-header">
+                <i class="fas fa-robot"></i> Cortex Advisor — Portfolio Analysis
+            </div>
+            <div id="aiContent" class="ai-content"></div>
         </div>
     </div>
 
     <script>
-        const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+        const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
         const token = localStorage.getItem('token');
-        if (!token) window.location.href = 'auth.html';
+        if (!token) window.location.href = '/login';
 
         let chartInstance = null;
 
@@ -317,7 +388,8 @@
             const content = document.getElementById('aiContent');
 
             box.style.display = 'block';
-            content.innerHTML = 'Thinking... (Analyzing Asset Allocation)';
+            box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            content.innerHTML = '<div class="ai-loading">Analyzing your portfolio allocation…</div>';
 
             try {
                 const res = await fetch(API_BASE + '/api/investments/analyze', {
@@ -325,10 +397,28 @@
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 const data = await res.json();
-                content.innerHTML = data.tips;
+                content.innerHTML = renderPointWise(data.tips || 'No analysis available.');
             } catch (e) {
-                content.innerText = "Error fetching analysis.";
+                content.innerHTML = '<p style="color:#e74c3c;">Error fetching analysis. Please try again.</p>';
             }
+        }
+
+        function renderPointWise(html) {
+            // Convert plain text bullet patterns (• - * numbered) into proper HTML if not already tagged
+            if (!/<[a-z][\s\S]*>/i.test(html)) {
+                // Plain text — convert lines to bullet blocks
+                const lines = html.split(/\n+/).filter(l => l.trim());
+                return lines.map(line => {
+                    const trimmed = line.replace(/^[-•*]\s*/, '').replace(/^\d+[.)]\s*/, '').trim();
+                    if (!trimmed) return '';
+                    const isHeader = /^[A-Z][^a-z]{0,3}[A-Z]/.test(trimmed) || trimmed.endsWith(':');
+                    return isHeader
+                        ? `<h3>${trimmed}</h3>`
+                        : `<div class="point-block">${trimmed}</div>`;
+                }).join('');
+            }
+            // Already HTML — wrap bare <li> content in point-block style via CSS (already applied)
+            return html;
         }
 
         loadInvestments();

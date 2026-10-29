@@ -8,7 +8,7 @@ const API_BASE = (window.location.protocol === 'http:' || window.location.protoc
 async function initDashboard() {
     const token = localStorage.getItem('token');
     if (!token) {
-        window.location.href = 'auth.html';
+        window.location.href = '/login';
         return;
     }
 
@@ -18,7 +18,7 @@ async function initDashboard() {
         });
 
         if (res.status === 401) {
-            window.location.href = 'auth.html'; // Token expired
+            window.location.href = '/login';
             return;
         }
 
@@ -26,7 +26,7 @@ async function initDashboard() {
         if (res.ok) {
             // Ensure data exists before rendering
             if (data.user_stats && data.counts) {
-                renderTopCards(data.user_stats, data.counts);
+                renderTopCards(data.user_stats, data.counts, data.income_expense_data);
             }
             if (data.intelligence) {
                 renderIntelligence(data.intelligence);
@@ -38,6 +38,7 @@ async function initDashboard() {
             if (data.recent_alerts && Array.isArray(data.recent_alerts)) {
                 renderAlerts(data.recent_alerts);
             }
+            renderRecurring(data.recurring_payments);
             if (data.user_stats) {
                 renderTrustCard(data.user_stats);
             }
@@ -64,32 +65,70 @@ async function initDashboard() {
     }
 }
 
-function renderTopCards(stats, counts) {
+function renderTopCards(stats, counts, incomeExpenseData) {
     document.getElementById('total-txns').innerText = counts.total_transactions;
     document.getElementById('suspicious-activity').innerText = counts.suspicious_activity;
-    document.getElementById('pending-verifications').innerText = counts.pending_verifications;
+    document.getElementById('disputed-txns').innerText = counts.disputed_transactions;
 
-    // Security Status Color
+    // Security Status: Strong=green, Moderate=yellow, Weak=red
     const secStatus = document.getElementById('security-status');
     secStatus.innerText = stats.security_status || 'Not assessed';
-    secStatus.style.color = stats.security_status === 'Verified' ? '#2ecc71' : (stats.security_status === 'Verification pending' ? '#f1c40f' : 'var(--text-muted)');
+    secStatus.style.color = stats.security_status === 'Strong' ? '#2ecc71'
+        : stats.security_status === 'Moderate' ? '#f1c40f'
+        : '#e74c3c';
 
-    document.getElementById('current-balance').innerText = stats.balance === null || stats.balance === undefined
-        ? 'Not available'
-        : '₹' + Number(stats.balance).toLocaleString();
+    // Net Cash Flow: sum of (income - expense) from last 30 days
+    const netEl = document.getElementById('net-cash-flow');
+    if (incomeExpenseData && incomeExpenseData.length > 0) {
+        const net = incomeExpenseData.reduce((acc, d) => acc + (d.income || 0) - (d.expense || 0), 0);
+        netEl.innerText = (net >= 0 ? '+' : '-') + '₹' + Math.abs(Math.round(net)).toLocaleString('en-IN');
+        netEl.style.color = net >= 0 ? '#2ecc71' : '#e74c3c';
+    } else {
+        netEl.innerText = 'No data';
+        netEl.style.color = 'var(--text-muted)';
+    }
 }
 
 // Old single chart render removed/replaced by renderCharts_All
 
 
 function renderIntelligence(intel) {
-    document.getElementById('expense-pred').innerText = intel.expense_prediction === null || intel.expense_prediction === undefined
-        ? 'Insufficient data'
-        : '₹' + Number(intel.expense_prediction).toLocaleString();
+    const predEl = document.getElementById('expense-pred');
+    const noteEl = document.getElementById('expense-pred-note');
+    if (intel.expense_prediction === null || intel.expense_prediction === undefined) {
+        predEl.innerText = 'No data yet';
+        if (noteEl) noteEl.innerText = 'Upload a bank statement to enable';
+    } else {
+        predEl.innerText = '₹' + Number(intel.expense_prediction).toLocaleString('en-IN');
+        if (noteEl && intel.months_used) noteEl.innerText = `Based on ${intel.months_used} month(s) of data`;
+    }
 
     const riskEl = document.getElementById('fraud-risk');
-    riskEl.innerText = intel.fraud_risk_level;
-    riskEl.style.color = intel.fraud_risk_level === 'Not assessed' ? 'var(--text-muted)' : (intel.fraud_risk_level === 'Low' ? '#2ecc71' : (intel.fraud_risk_level === 'Medium' ? '#f1c40f' : '#e74c3c'));
+    const riskNoteEl = document.getElementById('fraud-risk-note');
+    const risk = intel.fraud_risk_level || 'Not assessed';
+    const flagged = intel.flagged_count !== undefined ? intel.flagged_count : null;
+    riskEl.innerText = risk;
+    riskEl.style.color = risk === 'Low' ? '#2ecc71' : risk === 'Medium' ? '#f1c40f' : risk === 'High' ? '#e74c3c' : 'var(--text-muted)';
+    if (riskNoteEl && flagged !== null) riskNoteEl.innerText = `${flagged} flagged transaction(s)`;
+
+    const avgEl = document.getElementById('avg-spend');
+    if (avgEl) avgEl.innerText = intel.avg_monthly_spend ? '₹' + Number(intel.avg_monthly_spend).toLocaleString('en-IN') : '-';
+}
+
+function renderRecurring(recurring) {
+    const el = document.getElementById('recurring-list');
+    if (!el) return;
+    if (!recurring || recurring.length === 0) {
+        el.innerHTML = '<span style="color:#aaa; font-size:0.85rem;">No recurring payments detected yet. Upload more statements to detect patterns.</span>';
+        return;
+    }
+    el.innerHTML = recurring.map(r => `
+        <div style="background:rgba(0,0,0,0.2); padding:0.75rem 1rem; border-radius:8px; min-width:160px; flex:1;">
+            <div style="font-weight:600; font-size:0.88rem;">${r.description || r.merchant || 'Payment'}</div>
+            <div style="color:#2ecc71; font-weight:bold; margin:3px 0;">₹${Number(r.amount).toLocaleString('en-IN')}</div>
+            <div style="font-size:0.75rem; color:#aaa;">${r.frequency || 'Monthly'} · ${r.channel || ''}</div>
+        </div>
+    `).join('');
 }
 
 function renderAlerts(alerts) {
@@ -305,24 +344,38 @@ function renderCategoryChart(data) {
     const labels = data.map(d => d.category);
     const values = data.map(d => d.amount);
 
-    // Generate colors
-    const colors = ['#4e54c8', '#8f94fb', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6'];
+    const palette = [
+        '#4e54c8','#2ecc71','#e74c3c','#f1c40f','#9b59b6','#3b82f6',
+        '#f97316','#06b6d4','#10b981','#a78bfa','#fbbf24','#f472b6',
+        '#60a5fa','#34d399','#fb923c','#4ade80','#8f94fb','#ef4444'
+    ];
+    const colors = labels.map((_, i) => palette[i % palette.length]);
 
     new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: labels,
-            datasets: [{
-                data: values,
-                backgroundColor: colors,
-                borderWidth: 0
-            }]
+            labels,
+            datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: { padding: { bottom: 4 } },
             plugins: {
-                legend: { position: 'right', labels: { color: '#ccc' } }
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#ccc',
+                        boxWidth: 12,
+                        padding: 10,
+                        font: { size: 11 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.label}: ₹${Number(ctx.raw).toLocaleString('en-IN')}`
+                    }
+                }
             }
         }
     });
@@ -409,29 +462,41 @@ function renderPredictionChart(data) {
     if (!data?.length) { showChartEmpty(ctx, 'Insufficient validated history for a forecast.'); return; }
     clearChartEmpty(ctx);
 
-    const labels = data.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-    const actual = data.map(d => d.actual);
+    const labels = data.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    const actual = data.map(d => d.actual ?? null);
+
+    // Bridge the prediction line from the last actual point → forecast point
+    // Without this, predicted has only one non-null value (a dot, not a line).
     const predicted = data.map(d => d.predicted ?? null);
+    const lastActualIdx = actual.reduce((acc, v, i) => v !== null ? i : acc, -1);
+    if (lastActualIdx >= 0 && predicted[predicted.length - 1] !== null) {
+        predicted[lastActualIdx] = actual[lastActualIdx];
+    }
 
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels,
             datasets: [
                 {
-                    label: 'Actual',
+                    label: 'Actual Spend',
                     data: actual,
                     borderColor: '#4e54c8',
                     backgroundColor: 'rgba(78, 84, 200, 0.1)',
-                    tension: 0.4
+                    fill: true,
+                    tension: 0.4,
+                    spanGaps: false
                 },
                 {
                     label: 'AI Prediction',
                     data: predicted,
                     borderColor: '#f1c40f',
-                    borderDash: [5, 5],
+                    borderDash: [6, 4],
+                    backgroundColor: 'rgba(241, 196, 15, 0.08)',
                     tension: 0.4,
-                    pointStyle: 'rectRot'
+                    pointStyle: 'rectRot',
+                    pointRadius: 5,
+                    spanGaps: true
                 }
             ]
         },

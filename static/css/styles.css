@@ -188,12 +188,11 @@ body {
 
 .sidebar-icon {
     width: 24px;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     margin-right: 1rem;
     display: inline-block;
     text-align: center;
-    filter: grayscale(100%) brightness(200%);
-    opacity: 0.8;
+    flex-shrink: 0;
 }
 
 .sidebar-link i,
@@ -212,11 +211,6 @@ body {
     background: linear-gradient(90deg, rgba(78, 84, 200, 0.2), transparent);
     color: var(--primary);
     border-left: 3px solid var(--primary);
-}
-
-.sidebar-footer {
-    padding: 1rem;
-    border-top: 1px solid var(--glass-border);
 }
 
 .logout-btn {
@@ -293,8 +287,8 @@ body.sidebar-collapsed {
 
 /* Common Layouts */
 .container {
-    padding: 2rem;
-    max-width: 1400px;
+    padding: 1.25rem 1.5rem;
+    max-width: 1300px;
     margin: 0 auto;
 }
 
@@ -305,13 +299,62 @@ body.sidebar-collapsed {
     }
 }
 
+/* Sidebar links — tooltip handled by JS engine via data-tip attribute */
+.sidebar-link {
+    position: relative;
+}
+
+/* Info icon — sitewide hover tooltip (positioned by JS to escape overflow:hidden) */
+.info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    font-size: 0.78rem;
+    color: var(--secondary);
+    cursor: default;
+    vertical-align: middle;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+/* Floating tooltip bubble — injected by navbar.js into <body> */
+#info-tooltip {
+    position: fixed;
+    z-index: 99999;
+    background: #12122a;
+    color: #e2e8f0;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    padding: 8px 12px;
+    border-radius: 8px;
+    max-width: 260px;
+    white-space: normal;
+    pointer-events: none;
+    border: 1px solid rgba(143,148,251,0.35);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.55);
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+#info-tooltip.visible { opacity: 1; }
+#info-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: var(--arrow-left, 50%);
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(143,148,251,0.35);
+}
+
 /* Button Styles */
 .btn {
-    padding: 10px 20px;
+    padding: 8px 16px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.88rem;
     font-weight: 600;
     transition: all 0.3s ease;
     background: var(--primary);
@@ -363,14 +406,19 @@ input,
 select,
 textarea {
     width: 100%;
-    padding: 12px;
-    margin: 10px 0;
+    padding: 10px 12px;
+    margin: 8px 0;
     background: var(--bg-input);
     border: 1px solid #4b5563;
     border-radius: 6px;
     color: var(--text-main);
-    font-size: 1rem;
+    font-size: 0.9rem;
     transition: all 0.3s ease;
+}
+
+select option {
+    background: var(--bg-card, #1a1a2e);
+    color: var(--text-main, #ffffff);
 }
 
 ::placeholder {
@@ -394,6 +442,9 @@ h3 {
     letter-spacing: var(--letter-spacing-heading);
     font-weight: 700;
 }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.2rem; }
+h3 { font-size: 1rem; }
 
 /* Utility */
 .text-center {

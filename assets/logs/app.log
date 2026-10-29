@@ -1,0 +1,194 @@
+2026-01-30 22:37:51,955 INFO Generated OTP for talabattulajitendrasri@gmail.com: 971552
+2026-01-30 22:37:53,480 INFO OTP sent successfully to talabattulajitendrasri@gmail.com
+2026-01-31 11:42:25,077 INFO Generated OTP for talabattulajitendrasri@gmail.com: 936978
+2026-01-31 11:42:26,756 INFO OTP sent successfully to talabattulajitendrasri@gmail.com
+2026-07-16 10:58:57,915 ERROR Failed to send email to talabattulajitendrasri@gmail.com: (525, b'5.7.1 Unauthorized IP address')
+2026-07-16 11:00:04,362 ERROR Failed to send email to talabattulajitendrasri@gmail.com: (525, b'5.7.1 Unauthorized IP address')
+2026-07-16 11:00:05,056 ERROR Failed to send email to talabattulajitendrasri@gmail.com: (525, b'5.7.1 Unauthorized IP address')
+2026-07-16 11:01:09,619 INFO OTP sent successfully to talabattulajitendrasri@gmail.com
+2026-10-10 14:12:23,821 INFO Registration verification code generated.
+2026-10-10 14:12:25,088 ERROR Failed to send email to talabattulajitendrasri@gmail.com: (525, b'5.7.1 Unauthorized IP address')
+2026-10-10 14:32:58,267 INFO Registration verification code generated.
+2026-10-10 14:32:59,204 ERROR Failed to send email to talabattulajitendrasri@gmail.com: (525, b'5.7.1 Unauthorized IP address')
+2026-10-10 14:45:38,107 INFO OTP email sent successfully
+2026-10-10 14:50:22,822 INFO OTP email sent successfully
+2026-10-10 14:51:16,140 INFO OTP email sent successfully
+2026-10-10 14:51:55,729 INFO OTP email sent successfully
+2026-10-10 14:52:59,285 INFO OTP email sent successfully
+2026-10-10 14:53:37,917 INFO OTP email sent successfully
+2026-10-10 14:54:10,393 INFO OTP email sent successfully
+2026-10-10 14:56:24,493 ERROR OTP email delivery failed during authentication (SMTPAuthenticationError)
+2026-10-10 14:57:20,532 ERROR OTP email delivery failed during authentication (SMTPAuthenticationError)
+2026-10-10 15:22:09,439 INFO OTP email sent successfully
+2026-10-10 15:45:41,560 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 15:55:44,275 WARNING Upload fraud analysis unavailable (TypeError)
+2026-10-10 15:56:10,490 WARNING Upload fraud analysis unavailable (TypeError)
+2026-10-10 15:59:23,784 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:01:12,433 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:01:50,538 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:15:06,211 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:15:35,171 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:16:19,887 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:16:52,537 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:16:52,577 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:17:36,060 INFO OTP email sent successfully
+2026-10-10 16:17:36,234 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:17:36,293 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:19:49,173 INFO OTP email sent successfully
+2026-10-10 16:19:49,237 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:19:49,251 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:22:10,675 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:22:10,693 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:22:37,950 ERROR Transaction import commit failed (TypeError)
+2026-10-10 16:22:37,963 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:22:37,978 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:25:10,202 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:25:10,260 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:26:07,914 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:26:07,953 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:27:55,474 INFO OTP email sent successfully
+2026-10-10 16:27:55,689 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:27:55,743 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:43:42,671 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:43:42,739 WARNING Upload fraud analysis unavailable (AttributeError)
+2026-10-10 16:44:23,204 INFO Retrain requested by user: talabattulajitendrasri@gmail.com
+2026-10-10 16:44:23,204 INFO Starting model training...
+2026-10-10 16:44:28,495 INFO Model trained. Accuracy: 0.99, Weighted F1: 0.99, Fraud F1: 0.79
+2026-10-10 16:44:29,248 INFO Retrain successful. Metrics: {'accuracy': 0.9910581222056631, 'precision': 0.9918265849024289, 'recall': 0.9910581222056631, 'f1_score': 0.9913632396388415, 'report': {'0': {'precision': 0.9969496695475343, 'recall': 0.9939178915357324, 'f1-score': 0.9954314720812183, 'support': 1973.0}, '1': {'precision': 0.7391304347826086, 'recall': 0.85, 'f1-score': 0.7906976744186046, 'support': 40.0}, 'accuracy': 0.9910581222056631, 'macro avg': {'precision': 0.8680400521650715, 'recall': 0.9219589457678662, 'f1-score': 0.8930645732499114, 'support': 2013.0}, 'weighted avg': {'precision': 0.9918265849024289, 'recall': 0.9910581222056631, 'f1-score': 0.9913632396388415, 'support': 2013.0}}}
+2026-10-10 17:02:08,724 INFO OTP email sent successfully
+2026-10-10 17:05:18,296 INFO OTP email sent successfully
+2026-10-10 17:06:58,214 INFO OTP email sent successfully
+2026-10-10 17:11:43,471 INFO OTP email sent successfully
+2026-10-10 17:15:59,228 INFO Retrain requested by user: talabattulajitendrasri@gmail.com
+2026-10-10 17:15:59,229 INFO Starting model training...
+2026-10-10 17:16:02,695 INFO Model trained. Accuracy: 0.99, Weighted F1: 0.99, Fraud F1: 0.79
+2026-10-10 17:16:02,836 INFO Retrain successful. Metrics: {'accuracy': 0.9910581222056631, 'precision': 0.9918265849024289, 'recall': 0.9910581222056631, 'f1_score': 0.9913632396388415, 'report': {'0': {'precision': 0.9969496695475343, 'recall': 0.9939178915357324, 'f1-score': 0.9954314720812183, 'support': 1973.0}, '1': {'precision': 0.7391304347826086, 'recall': 0.85, 'f1-score': 0.7906976744186046, 'support': 40.0}, 'accuracy': 0.9910581222056631, 'macro avg': {'precision': 0.8680400521650715, 'recall': 0.9219589457678662, 'f1-score': 0.8930645732499114, 'support': 2013.0}, 'weighted avg': {'precision': 0.9918265849024289, 'recall': 0.9910581222056631, 'f1-score': 0.9913632396388415, 'support': 2013.0}}}
+2026-10-10 17:32:12,622 INFO OTP email sent successfully
+2026-10-10 17:32:51,828 INFO OTP email sent successfully
+2026-10-10 17:39:00,539 INFO OTP email sent successfully
+2026-10-10 17:41:07,574 ERROR Dashboard Error: 'Mock' object is not iterable
+2026-10-10 17:41:08,838 ERROR Dashboard Error: 'Mock' object is not iterable
+2026-10-10 17:47:03,313 ERROR Dashboard Error: 
+2026-10-10 17:47:03,837 ERROR Dashboard Error: 
+2026-10-10 17:47:58,262 ERROR Dashboard Error: unsupported operand type(s) for +: 'dict' and 'str'
+2026-10-10 17:49:19,947 INFO OTP email sent successfully
+2026-10-10 17:52:10,956 INFO OTP email sent successfully
+2026-10-10 17:53:02,292 INFO OTP email sent successfully
+2026-10-10 17:55:27,389 INFO OTP email sent successfully
+2026-10-10 17:59:25,314 INFO OTP email sent successfully
+2026-10-10 18:03:32,339 INFO OTP email sent successfully
+2026-10-18 12:40:06,434 INFO OTP email sent successfully
+2026-10-18 12:53:10,664 INFO OTP email sent successfully
+2026-10-18 13:08:20,501 INFO OTP email sent successfully
+2026-10-18 13:19:17,327 ERROR Dashboard Error: 'Mock' object is not iterable
+2026-10-18 13:19:17,787 ERROR Dashboard Error: 'Mock' object is not iterable
+2026-10-18 13:20:51,774 ERROR Dashboard Error: '>' not supported between instances of 'Mock' and 'int'
+2026-10-18 13:20:52,240 ERROR Dashboard Error: '>' not supported between instances of 'Mock' and 'int'
+2026-10-18 13:25:28,310 INFO OTP email sent successfully
+2026-10-18 13:28:03,444 INFO OTP email sent successfully
+2026-10-18 13:42:43,854 INFO OTP email sent successfully
+2026-10-18 14:27:57,863 INFO OTP email sent successfully
+2026-10-18 14:29:39,689 INFO OTP email sent successfully
+2026-10-18 14:31:49,431 INFO OTP email sent successfully
+2026-10-18 14:37:01,299 INFO OTP email sent successfully
+2026-10-18 14:37:40,842 INFO OTP email sent successfully
+2026-10-18 14:54:00,969 INFO OTP email sent successfully
+2026-10-18 14:54:54,364 INFO OTP email sent successfully
+2026-10-18 14:57:08,011 INFO OTP email sent successfully
+2026-10-18 14:57:39,004 INFO OTP email sent successfully
+2026-10-18 14:59:22,453 INFO OTP email sent successfully
+2026-10-18 15:26:54,664 INFO OTP email sent successfully
+2026-10-18 15:35:32,950 INFO OTP email sent successfully
+2026-10-18 15:43:35,357 ERROR OTP email delivery failed during authentication (SMTPAuthenticationError)
+2026-10-18 15:43:35,357 WARNING KYC confirmation code delivery failed for user financial-test-user
+2026-10-18 15:47:26,226 INFO OTP email sent successfully
+2026-10-18 15:49:55,159 INFO OTP email sent successfully
+2026-10-18 15:54:48,169 INFO OTP email sent successfully
+2026-10-22 21:51:33,870 INFO OTP email sent successfully
+2026-10-22 21:54:30,569 INFO OTP email sent successfully
+2026-10-22 21:59:26,472 INFO Retrain requested by user: talabattulajitendrasri@gmail.com
+2026-10-22 21:59:26,473 INFO Starting model training...
+2026-10-22 21:59:29,502 INFO Model trained. Accuracy: 0.99, Weighted F1: 0.99, Fraud F1: 0.79
+2026-10-22 21:59:29,588 INFO Retrain successful. Metrics: {'accuracy': 0.9910581222056631, 'precision': 0.9918265849024289, 'recall': 0.9910581222056631, 'f1_score': 0.9913632396388415, 'report': {'0': {'precision': 0.9969496695475343, 'recall': 0.9939178915357324, 'f1-score': 0.9954314720812183, 'support': 1973.0}, '1': {'precision': 0.7391304347826086, 'recall': 0.85, 'f1-score': 0.7906976744186046, 'support': 40.0}, 'accuracy': 0.9910581222056631, 'macro avg': {'precision': 0.8680400521650715, 'recall': 0.9219589457678662, 'f1-score': 0.8930645732499114, 'support': 2013.0}, 'weighted avg': {'precision': 0.9918265849024289, 'recall': 0.9910581222056631, 'f1-score': 0.9913632396388415, 'support': 2013.0}}}
+2026-10-22 22:03:16,350 INFO OTP email sent successfully
+2026-10-22 22:49:23,465 INFO OTP email sent successfully
+2026-10-25 13:12:50,929 INFO OTP email sent successfully
+2026-10-25 13:15:09,674 ERROR Transaction import commit failed (TypeError)
+2026-10-25 13:19:02,136 ERROR Failed to configure GenAI: name 'gemini_client' is not defined
+2026-10-25 13:19:03,776 ERROR Failed to configure GenAI: name 'gemini_client' is not defined
+2026-10-25 13:19:14,848 ERROR Failed to configure GenAI: name 'gemini_client' is not defined
+2026-10-25 13:19:16,540 ERROR Failed to configure GenAI: name 'gemini_client' is not defined
+2026-10-25 13:24:32,183 INFO OTP email sent successfully
+2026-10-25 13:25:17,863 INFO OTP email sent successfully
+2026-10-25 13:25:38,895 INFO OTP email sent successfully
+2026-10-25 13:27:50,653 ERROR Transaction import commit failed (TypeError)
+2026-10-25 13:29:55,384 INFO OTP email sent successfully
+2026-10-25 13:30:33,847 INFO OTP email sent successfully
+2026-10-25 14:30:53,173 INFO OTP email sent successfully
+2026-10-25 14:31:12,604 INFO Starting model training...
+2026-10-25 14:31:20,980 INFO Model trained. Fraud F1 0.780, ROC-AUC 0.9976051697921946, PR-AUC 0.8971820965829677
+2026-10-25 14:31:37,681 INFO Starting model training...
+2026-10-25 14:31:43,957 INFO Model trained. Fraud F1 0.780, ROC-AUC 0.9976051697921946, PR-AUC 0.8971820965829677
+2026-10-25 14:35:52,659 INFO OTP email sent successfully
+2026-10-25 14:42:42,310 INFO OTP email sent successfully
+2026-10-25 14:57:48,975 INFO OTP email sent successfully
+2026-10-25 14:59:07,770 INFO OTP email sent successfully
+2026-10-25 15:12:14,497 INFO OTP email sent successfully
+2026-10-25 15:13:47,663 INFO OTP email sent successfully
+2026-10-25 15:32:20,877 INFO OTP email sent successfully
+2026-10-25 15:45:53,441 INFO OTP email sent successfully
+2026-10-25 15:49:01,610 INFO OTP email sent successfully
+2026-10-25 17:35:21,656 INFO OTP email sent successfully
+2026-10-25 18:29:53,669 ERROR DB Error during login: Database not initialized
+2026-10-25 18:29:56,001 ERROR DB Error during login: Database not initialized
+2026-10-25 18:43:31,478 ERROR OTP email delivery failed during authentication (SMTPAuthenticationError)
+2026-10-25 18:43:31,478 WARNING KYC confirmation code delivery failed for user 9df3dfe3-723e-46dc-aeaa-e8b81fa6d813
+2026-10-25 18:45:14,580 INFO OTP email sent successfully
+2026-10-25 18:53:40,177 INFO OTP email sent successfully
+2026-10-25 18:54:17,402 INFO OTP email sent successfully
+2026-10-25 18:58:01,064 INFO OTP email sent successfully
+2026-10-25 19:17:00,404 INFO OTP email sent successfully
+2026-10-25 19:19:56,129 INFO OTP email sent successfully
+2026-10-25 20:21:43,607 INFO Email sent successfully (Your Verification Code)
+2026-10-25 20:23:16,400 INFO Email sent successfully (Your Verification Code)
+2026-10-25 20:26:14,816 INFO Email sent successfully (Your Verification Code)
+2026-10-25 20:27:15,946 INFO Email sent successfully (Your Verification Code)
+2026-10-25 20:28:41,345 INFO Email sent successfully (Your Verification Code)
+2026-10-25 20:42:42,491 ERROR Dashboard Error: 'Mock' object is not iterable
+2026-10-25 20:42:43,410 ERROR Dashboard Error: 'Mock' object is not iterable
+2026-10-25 20:42:43,446 ERROR Dashboard Error: 'Mock' object is not iterable
+2026-10-25 20:42:48,222 INFO Email sent successfully (Your Verification Code)
+2026-10-25 20:44:18,343 ERROR Dashboard Error: 'count'
+2026-10-25 20:44:19,146 ERROR Dashboard Error: 
+2026-10-25 20:44:23,888 INFO Email sent successfully (Your Verification Code)
+2026-10-25 20:45:24,204 INFO Email sent successfully (Your Verification Code)
+2026-10-25 20:46:40,079 INFO Email sent successfully (Your Verification Code)
+2026-10-25 20:51:23,330 INFO Email sent successfully (Your Verification Code)
+2026-10-25 20:52:39,231 INFO Email sent successfully (Your Verification Code)
+2026-10-25 21:30:03,765 INFO Email sent successfully (Your Verification Code)
+2026-10-27 21:24:10,766 INFO Retrain requested by user: talabattulajitendrasri@gmail.com
+2026-10-27 21:24:10,767 INFO Starting model training...
+2026-10-27 21:24:45,591 INFO Model trained. Fraud F1 0.779, ROC-AUC 0.997901921132457, PR-AUC 0.9167240755171193
+2026-10-27 21:24:45,821 INFO Retrain successful. Metrics: {'accuracy': 0.9915758176412289, 'precision': 0.9913020695238685, 'recall': 0.9915758176412289, 'f1_score': 0.9914149019768537, 'report': {'0': {'precision': 0.9949520444220091, 'recall': 0.9964610717896866, 'f1-score': 0.9957059863601919, 'support': 1978.0}, '1': {'precision': 0.8108108108108109, 'recall': 0.75, 'f1-score': 0.7792207792207793, 'support': 40.0}, 'accuracy': 0.9915758176412289, 'macro avg': {'precision': 0.90288142761641, 'recall': 0.8732305358948433, 'f1-score': 0.8874633827904856, 'support': 2018.0}, 'weighted avg': {'precision': 0.9913020695238685, 'recall': 0.9915758176412289, 'f1-score': 0.9914149019768537, 'support': 2018.0}}, 'random_forest': {'roc_auc': 0.997901921132457, 'pr_auc': 0.9167240755171193, 'threshold': 0.66, 'fraud_precision': 0.8108108108108109, 'fraud_recall': 0.75, 'fraud_f1': 0.7792207792207793, 'false_positive_rate': 0.003538928210313448, 'confusion_matrix': {'tn': 1971, 'fp': 7, 'fn': 10, 'tp': 30}}, 'anomaly_detector': {'roc_auc': 0.9826213346814965, 'pr_auc': 0.3980491897082614, 'threshold': 0.82, 'fraud_precision': 0.4, 'fraud_recall': 0.85, 'fraud_f1': 0.544, 'false_positive_rate': 0.02578361981799798, 'confusion_matrix': {'tn': 1927, 'fp': 51, 'fn': 6, 'tp': 34}}, 'hybrid_risk': {'roc_auc': 0.997901921132457, 'pr_auc': 0.9177891198826073, 'threshold': 0.65, 'fraud_precision': 0.7674418604651163, 'fraud_recall': 0.825, 'fraud_f1': 0.7951807228915663, 'false_positive_rate': 0.005055611729019211, 'confusion_matrix': {'tn': 1968, 'fp': 10, 'fn': 7, 'tp': 33}}, 'detection_latency_ms': {'batch_per_txn': 0.1058, 'single_p50': 148.729, 'single_p95': 175.384}, 'decision_threshold': 0.66, 'dataset': {'train': 8072, 'test': 2018, 'fraud_rate': 0.0199, 'channels': ['ATM', 'BILL', 'CARD', 'Credit Card', 'Debit Card', 'IMPS', 'INT', 'Mobile', 'Mobile App', 'NACH', 'NEFT', 'Net Banking', 'POS', 'SALARY', 'UPI', 'Web']}, 'feature_importance': {'transaction_amount': 0.8882, 'channel': 0.0889, 'account_age_days': 0.0215, 'kyc_verified': 0.0014}, 'trained_at': '2026-10-27T21:24:45'}
+2026-10-27 21:31:04,563 INFO Email sent successfully (Your Verification Code)
+2026-10-27 21:37:50,801 INFO Email sent successfully (Your Verification Code)
+2026-10-27 22:15:56,732 ERROR Notifications error: ac-6ohzvp1-shard-00-01.g80oagl.mongodb.net:27017: The read operation timed out (configured timeouts: socketTimeoutMS: 5000.0ms, connectTimeoutMS: 5000.0ms)
+2026-10-27 22:27:20,772 INFO Email sent successfully (Your Verification Code)
+2026-10-27 22:28:52,061 INFO Email sent successfully (Your Verification Code)
+2026-10-27 22:35:35,292 INFO Email sent successfully (Your Verification Code)
+2026-10-27 22:39:01,481 INFO Email sent successfully (Your Verification Code)
+2026-10-27 22:41:01,901 INFO Email sent successfully (Your Verification Code)
+2026-10-27 22:44:25,523 INFO Email sent successfully (Your Verification Code)
+2026-10-27 22:46:35,299 INFO Email sent successfully (Your Verification Code)
+2026-10-27 22:52:06,922 INFO Email sent successfully (Your Verification Code)
+2026-10-27 22:53:00,547 INFO Email sent successfully (Your Verification Code)
+2026-10-27 22:57:45,580 INFO Email sent successfully (Your Verification Code)
+2026-10-27 23:22:39,710 ERROR Email delivery failed during authentication (SMTPAuthenticationError)
+2026-10-28 21:53:21,687 ERROR DB Error during login: Database not initialized
+2026-10-28 21:54:56,335 ERROR DB Error during login: Database not initialized
+2026-10-28 21:56:26,356 ERROR Email delivery failed during authentication (SMTPAuthenticationError)
+2026-10-28 21:56:26,357 WARNING Password reset OTP delivery failed for a verified account
+2026-10-28 22:04:02,369 ERROR DB Error during login: Database not initialized
+2026-10-28 23:06:19,660 ERROR Email delivery failed during authentication (SMTPAuthenticationError)
+2026-10-28 23:26:20,204 ERROR Email delivery failed during authentication (SMTPAuthenticationError)
+2026-10-29 02:48:19,150 ERROR Email delivery failed during authentication (SMTPAuthenticationError)

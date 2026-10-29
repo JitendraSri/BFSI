@@ -5,34 +5,55 @@
   <meta charset="utf-8">
   <title>Transactions - BFSI Intelligence</title>
   <link rel="stylesheet" href="/static/css/styles.css?v=3">
+  <link rel="stylesheet" href="/static/css/transactions.css?v=2">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    .txn-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
+    .txn-table { width:100%; border-collapse:collapse; }
+    .txn-table th, .txn-table td { padding:0.75rem 1rem; text-align:left; border-bottom:1px solid rgba(255,255,255,0.07); }
+    .txn-table th { background:rgba(255,255,255,0.05); color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:.04em; }
+    .txn-table tbody tr:hover { background:rgba(255,255,255,0.03); }
+    .txn-table input[type=checkbox] { width:15px; height:15px; accent-color:var(--secondary,#6c63ff); cursor:pointer; }
 
-    .txn-table th,
-    .txn-table td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
+    .status-safe     { color:#2ecc71; font-weight:600; font-size:0.78rem; }
+    .status-fraud    { color:#e74c3c; font-weight:700; font-size:0.78rem; }
+    .status-disputed { color:#f39c12; font-weight:600; font-size:0.78rem; }
 
-    .txn-table th {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-muted);
-    }
+    .badge-safe     { background:rgba(46,204,113,.15); color:#2ecc71; }
+    .badge-fraud    { background:rgba(231,76,60,.15); color:#e74c3c; }
+    .badge-disputed { background:rgba(243,156,18,.15); color:#f39c12; }
 
-    .status-safe {
-      color: #4cd137;
-    }
+    .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.72rem; font-weight:600; }
 
-    .status-fraud {
-      color: #e74c3c;
-      font-weight: bold;
-    }
+    /* Pagination bar */
+    .pag-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-top:1rem; }
+    .pag-info { color:#aaa; font-size:0.82rem; }
+    .pag-btns { display:flex; gap:0.4rem; align-items:center; }
+    .pag-btn  { background:rgba(255,255,255,0.07); color:#ddd; border:1px solid rgba(255,255,255,0.12);
+                border-radius:6px; padding:5px 14px; cursor:pointer; font-size:0.82rem; transition:background .15s; }
+    .pag-btn:hover:not(:disabled) { background:rgba(255,255,255,0.14); }
+    .pag-btn:disabled { opacity:.35; cursor:not-allowed; }
+    .pag-btn.active   { background:var(--secondary,#6c63ff); border-color:transparent; color:#fff; }
+
+    /* Action bar above table */
+    .action-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+                  gap:0.5rem; margin-bottom:0.75rem; }
+    .sel-count { font-size:0.82rem; color:#aaa; min-width:120px; }
+
+    .txn-actions { display:flex; gap:5px; }
+    .txn-actions .btn { padding:3px 10px; font-size:0.75rem; }
+    .btn-dispute  { background:rgba(243,156,18,.15); color:#f39c12; border:1px solid rgba(243,156,18,.3); }
+    .btn-dispute.active { background:rgba(243,156,18,.35); }
+    .btn-dispute:hover  { background:rgba(243,156,18,.3); }
+
+    .filter-pill { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .filter-pill .btn { padding:4px 12px; font-size:0.78rem; }
+    .filter-pill .btn.active-filter { background:var(--secondary,#6c63ff); }
+
+    /* Summary row */
+    .summary-chips { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.75rem; }
+    .chip { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+            border-radius:20px; padding:4px 14px; font-size:0.78rem; color:#ccc; }
+    .chip span { font-weight:700; color:#fff; margin-right:3px; }
   </style>
 </head>
 
@@ -40,154 +61,437 @@
   <script src="/static/js/navbar.js?v=7"></script>
 
   <div class="container">
-    <h1>Transaction History</h1>
+    <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+      <h1 style="margin:0;">Transaction History</h1>
+      <span class="info-icon" data-tip="All transactions imported from your uploaded bank statements. Flagged = ML model detected potential fraud. Dispute = flag for your own review.">ⓘ</span>
+    </div>
+    <p style="color:#aaa; font-size:0.85rem; margin-bottom:1rem;">Filter, dispute, or delete your imported transactions. Use checkboxes to act on multiple rows.</p>
 
-    <div class="glass card" style="margin-bottom: 1rem;">
-      <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-        <button class="btn" onclick="filterRange('1w')">Last 1 Week</button>
-        <button class="btn" onclick="filterRange('2w')">Last 2 Weeks</button>
-        <button class="btn" onclick="filterRange('1m')">Last 1 Month</button>
-        <button class="btn" onclick="filterRange('6m')">Last 6 Months</button>
-        <button class="btn" onclick="filterRange('this_month')">This Month</button>
-        <div style="border-left: 1px solid #555; padding-left: 10px; margin-left: 10px; display: flex; gap: 5px;">
-          <input type="date" id="startDate" style="padding: 5px; border-radius: 4px; border:none;">
-          <span style="color:white">-</span>
-          <input type="date" id="endDate" style="padding: 5px; border-radius: 4px; border:none;">
-          <button class="btn" style="background:#2ecc71" onclick="applyCustomFilter()">Go</button>
-          <button class="btn" style="background:#95a5a6" onclick="resetFilters()">Reset</button>
+    <!-- Filters -->
+    <div class="glass card" style="margin-bottom:1rem; padding:0.85rem 1rem;">
+      <div class="filter-pill">
+        <button class="btn" id="f-1w"         onclick="quickFilter('1w')">1 Week</button>
+        <button class="btn" id="f-2w"         onclick="quickFilter('2w')">2 Weeks</button>
+        <button class="btn" id="f-1m"         onclick="quickFilter('1m')">1 Month</button>
+        <button class="btn" id="f-6m"         onclick="quickFilter('6m')">6 Months</button>
+        <button class="btn" id="f-this_month" onclick="quickFilter('this_month')">This Month</button>
+        <button class="btn" id="f-disputed"   onclick="quickFilter('disputed')"
+                style="background:rgba(243,156,18,.15); color:#f39c12; border:1px solid rgba(243,156,18,.3);">⚑ Disputed</button>
+        <button class="btn" id="f-flagged"    onclick="quickFilter('flagged')"
+                style="background:rgba(231,76,60,.12); color:#e74c3c; border:1px solid rgba(231,76,60,.25);">⚠ Flagged</button>
+        <div style="border-left:1px solid #555; padding-left:10px; margin-left:4px; display:flex; gap:5px; align-items:center;">
+          <input type="date" id="startDate" style="padding:5px; border-radius:4px; border:none; background:#1a1a2e; color:#fff;">
+          <span style="color:#888;">—</span>
+          <input type="date" id="endDate"   style="padding:5px; border-radius:4px; border:none; background:#1a1a2e; color:#fff;">
+          <button class="btn" style="background:#2ecc71;" onclick="applyCustomFilter()">Go</button>
+          <button class="btn" style="background:#555;"    onclick="resetFilters()">Reset</button>
         </div>
       </div>
     </div>
 
-    <div class="glass card">
-      <table class="txn-table">
+    <!-- Summary chips -->
+    <div class="summary-chips" id="summaryChips"></div>
+
+    <!-- Table card -->
+    <div class="glass card" style="overflow-x:auto; padding:1rem;">
+
+      <!-- Action bar -->
+      <div class="action-bar">
+        <div class="sel-count" id="selCount">0 selected</div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button class="btn" id="btnDispSel"
+                  style="background:rgba(243,156,18,.15); color:#f39c12; border:1px solid rgba(243,156,18,.3); display:none;"
+                  onclick="disputeSelected()">⚑ Dispute Selected</button>
+          <button class="btn" id="btnDelSel"
+                  style="background:rgba(231,76,60,.15); color:#e74c3c; border:1px solid rgba(231,76,60,.3); display:none;"
+                  onclick="deleteSelected()">🗑 Delete Selected</button>
+          <button class="btn" id="btnClearAll"
+                  style="background:rgba(231,76,60,.08); color:#e74c3c; border:1px solid rgba(231,76,60,.2); font-size:0.8rem;"
+                  onclick="clearAll()">✕ Clear All Transactions</button>
+        </div>
+      </div>
+
+      <table class="txn-table" style="min-width:700px;">
         <thead>
           <tr>
-            <th>ID</th>
+            <th><input type="checkbox" id="selectAll" title="Select all on this page" onchange="toggleSelectAll(this)"></th>
+            <th>#</th>
             <th>Date</th>
+            <th>Description</th>
             <th>Amount</th>
             <th>Channel</th>
             <th>Status</th>
-            <th>Action</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="txnBody">
-          <tr>
-            <td colspan="5" class="text-center">Loading...</td>
-          </tr>
+          <tr><td colspan="8" style="text-align:center; padding:2rem; color:#555;">Loading…</td></tr>
         </tbody>
       </table>
+
+      <!-- Pagination -->
+      <div class="pag-bar" id="pagBar" style="display:none;">
+        <div class="pag-info" id="pagInfo"></div>
+        <div class="pag-btns">
+          <button class="pag-btn" id="btnFirst" onclick="goPage(1)">« First</button>
+          <button class="pag-btn" id="btnPrev"  onclick="goPage(state.page - 1)">‹ Prev</button>
+          <span id="pagPages" style="display:flex; gap:4px;"></span>
+          <button class="pag-btn" id="btnNext"  onclick="goPage(state.page + 1)">Next ›</button>
+          <button class="pag-btn" id="btnLast"  onclick="goPage(state.totalPages)">Last »</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:0.78rem; color:#aaa;">Per page:</span>
+          <select id="pageSizeSelect" onchange="changePageSize(this.value)"
+                  style="background:#1a1a2e; color:#fff; border:1px solid #444; border-radius:5px; padding:3px 6px; font-size:0.78rem;">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+          </select>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin.replace(/:\d+$/, ':5000');
+    const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
     const token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login'; }
 
-    if (!token) window.location.href = 'auth.html';
+    // ── State ──────────────────────────────────────────────────────────────────
+    const state = {
+      page: 1,
+      pageSize: 50,
+      totalPages: 1,
+      total: 0,
+      startDate: null,
+      endDate: null,
+      status: null,      // null | 'flagged' | 'disputed'
+    };
 
-    // Load transactions immediately on page load
-    document.addEventListener('DOMContentLoaded', function () {
-      loadTxns();
-    });
+    // ── Bootstrap ──────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => loadTxns());
 
+    // ── Core loader ───────────────────────────────────────────────────────────
+    async function loadTxns() {
+      const tbody = document.getElementById('txnBody');
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#555;">Loading…</td></tr>';
+      document.getElementById('pagBar').style.display = 'none';
+      document.getElementById('selectAll').checked = false;
+      updateSelCount();
 
-    async function loadTxns(start = null, end = null) {
       try {
-        let url = API_BASE + '/api/transactions?limit=100';
-        if (start) url += `&start_date=${start}`;
-        if (end) url += `&end_date=${end}`;
+        let url = `${API_BASE}/api/transactions?page=${state.page}&page_size=${state.pageSize}`;
+        if (state.startDate) url += `&start_date=${state.startDate}`;
+        if (state.endDate)   url += `&end_date=${state.endDate}`;
+        if (state.status)    url += `&status=${state.status}`;
 
-        const res = await fetch(url, {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const res  = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
         const data = await res.json();
 
-        const tbody = document.getElementById('txnBody');
-        tbody.innerHTML = '';
-
-        if (data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-center">No transactions found.</td></tr>';
+        if (!res.ok) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#e74c3c; padding:1.5rem;">${data.error || 'Error loading transactions'}</td></tr>`;
           return;
         }
 
-        data.forEach(txn => {
-          // txn structure: transaction_id, user_id, customer_id, kyc_verified, account_age_days, transaction_amount, channel, timestamp, is_fraud
+        const items = data.items || [];
+        state.total      = data.total || 0;
+        state.totalPages = Math.max(1, Math.ceil(state.total / state.pageSize));
 
-          const date = new Date(txn.timestamp).toLocaleString();
-          const isFraud = txn.is_fraud === 1;
-          const statusHtml = isFraud ? '<span class="status-fraud">ALERT</span>' : '<span class="status-safe">Safe</span>';
+        renderSummary(data.summary || {});
+        renderPagination();
 
-          const tr = `
-             <tr id="row-${txn.transaction_id}">
-               <td>TXN_${txn.transaction_id}</td>
-               <td>${date}</td>
-               <td>₹${txn.transaction_amount}</td>
-               <td>${txn.channel}</td>
-               <td>${statusHtml}</td>
-               <td>
-                 <button class="btn" style="background: #e74c3c; padding: 4px 8px; font-size: 0.8rem;" onclick="deleteTxn('${txn.transaction_id}')">Delete</button>
-               </td>
-             </tr>
-           `;
-          tbody.innerHTML += tr;
+        if (!items.length) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#aaa; padding:2rem;">
+            No transactions found.
+            ${!state.startDate && !state.status ? '<a href="/upload-page" style="color:var(--secondary);">Upload a bank statement</a> to get started.' : ''}
+          </td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = '';
+        const offset = (state.page - 1) * state.pageSize;
+        items.forEach((txn, i) => {
+          const date      = txn.timestamp ? new Date(txn.timestamp).toLocaleString('en-IN') : '—';
+          const isFraud   = txn.is_fraud === 1;
+          const isDisp    = !!txn.disputed;
+          const desc      = (txn.description || txn.merchant || '—').substring(0, 40);
+          const amt       = '₹' + Number(txn.transaction_amount || 0).toLocaleString('en-IN');
+          const tid       = String(txn.transaction_id);
+
+          let badgeCls, badgeTxt;
+          if (isDisp)       { badgeCls = 'badge badge-disputed'; badgeTxt = '⚑ Disputed'; }
+          else if (isFraud) { badgeCls = 'badge badge-fraud';    badgeTxt = '⚠ Flagged'; }
+          else              { badgeCls = 'badge badge-safe';     badgeTxt = '✓ Safe'; }
+
+          const tr = document.createElement('tr');
+          tr.id = `row-${tid}`;
+          tr.dataset.fraud = isFraud ? '1' : '0';
+          tr.innerHTML = `
+            <td><input type="checkbox" class="row-cb" data-id="${tid}" onchange="updateSelCount()"></td>
+            <td style="color:#555; font-size:0.75rem;">${offset + i + 1}</td>
+            <td style="white-space:nowrap; font-size:0.82rem;">${date}</td>
+            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.85rem;" title="${txn.description || txn.merchant || ''}">${desc}</td>
+            <td style="font-weight:600;">${amt}</td>
+            <td style="font-size:0.82rem; color:#aaa;">${txn.channel || '—'}</td>
+            <td><span class="${badgeCls}">${badgeTxt}</span></td>
+            <td>
+              <div class="txn-actions">
+                <button class="btn btn-dispute${isDisp ? ' active' : ''}" title="${isDisp ? 'Remove dispute flag' : 'Flag as disputed'}"
+                        onclick="toggleDispute('${tid}', this)">⚑</button>
+                <button class="btn" style="background:rgba(231,76,60,.15); color:#e74c3c; border:1px solid rgba(231,76,60,.3);"
+                        title="Delete this transaction" onclick="deleteTxn('${tid}')">🗑</button>
+              </div>
+            </td>`;
+          tbody.appendChild(tr);
         });
+
+        document.getElementById('pagBar').style.display = 'flex';
       } catch (e) {
         console.error(e);
-        document.getElementById('txnBody').innerHTML = '<tr><td colspan="6" class="text-center">Error loading data</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#e74c3c; padding:1.5rem;">Connection error. Please try again.</td></tr>`;
       }
     }
 
-    async function deleteTxn(id) {
-      if (!confirm('Are you sure you want to delete Transaction TXN_' + id + '?')) return;
+    // ── Summary chips ─────────────────────────────────────────────────────────
+    function renderSummary(s) {
+      const el = document.getElementById('summaryChips');
+      if (!s.total) { el.innerHTML = ''; return; }
+      el.innerHTML = `
+        <div class="chip"><span>${s.total || 0}</span>Total</div>
+        <div class="chip"><span style="color:#e74c3c;">${s.flagged || 0}</span>Flagged</div>
+        <div class="chip"><span style="color:#f39c12;">${s.disputed || 0}</span>Disputed</div>
+        <div class="chip"><span style="color:#2ecc71;">${s.credits || 0}</span>Credits</div>
+        <div class="chip"><span style="color:#e74c3c;">${s.debits || 0}</span>Debits</div>`;
+    }
 
-      try {
-        const res = await fetch(API_BASE + '/api/transactions/' + id, {
-          method: 'DELETE',
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (res.ok) {
-          document.getElementById('row-' + id).remove();
+    // ── Pagination ────────────────────────────────────────────────────────────
+    function renderPagination() {
+      const start = (state.page - 1) * state.pageSize + 1;
+      const end   = Math.min(state.page * state.pageSize, state.total);
+      document.getElementById('pagInfo').textContent =
+        `Showing ${start}–${end} of ${state.total} transactions`;
+
+      document.getElementById('btnFirst').disabled = state.page <= 1;
+      document.getElementById('btnPrev').disabled  = state.page <= 1;
+      document.getElementById('btnNext').disabled  = state.page >= state.totalPages;
+      document.getElementById('btnLast').disabled  = state.page >= state.totalPages;
+
+      // Page number buttons (show window of 5)
+      const pagesEl = document.getElementById('pagPages');
+      pagesEl.innerHTML = '';
+      const range = pageRange(state.page, state.totalPages, 5);
+      range.forEach(p => {
+        const b = document.createElement('button');
+        b.className = 'pag-btn' + (p === state.page ? ' active' : '');
+        b.textContent = p;
+        b.onclick = () => goPage(p);
+        pagesEl.appendChild(b);
+      });
+    }
+
+    function pageRange(cur, total, window) {
+      let start = Math.max(1, cur - Math.floor(window / 2));
+      let end   = Math.min(total, start + window - 1);
+      start     = Math.max(1, end - window + 1);
+      const arr = [];
+      for (let i = start; i <= end; i++) arr.push(i);
+      return arr;
+    }
+
+    function goPage(p) {
+      p = Math.max(1, Math.min(p, state.totalPages));
+      if (p === state.page) return;
+      state.page = p;
+      loadTxns();
+    }
+
+    function changePageSize(val) {
+      state.pageSize = parseInt(val, 10);
+      state.page     = 1;
+      loadTxns();
+    }
+
+    // ── Filters ───────────────────────────────────────────────────────────────
+    const DATE_RANGES = { '1w':7, '2w':14, '1m':30, '6m':183 };
+
+    function quickFilter(range) {
+      // Clear custom date inputs
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value   = '';
+      // Toggle active-filter highlight
+      document.querySelectorAll('.filter-pill .btn').forEach(b => b.classList.remove('active-filter'));
+      document.getElementById('f-' + range)?.classList.add('active-filter');
+
+      state.page = 1;
+      if (range === 'disputed') {
+        state.status    = 'disputed';
+        state.startDate = null;
+        state.endDate   = null;
+      } else if (range === 'flagged') {
+        state.status    = 'flagged';
+        state.startDate = null;
+        state.endDate   = null;
+      } else {
+        state.status = null;
+        const now   = new Date();
+        let   start = new Date();
+        if (range === 'this_month') {
+          start = new Date(now.getFullYear(), now.getMonth(), 1);
         } else {
-          alert('Failed to delete transaction.');
+          start.setDate(now.getDate() - (DATE_RANGES[range] || 7));
         }
-      } catch (e) {
-        alert('Connection error');
+        state.startDate = start.toISOString().split('T')[0];
+        state.endDate   = new Date(now.getTime() + 86400000).toISOString().split('T')[0];
       }
-    }
-    function filterRange(range) {
-      const now = new Date();
-      let start = new Date();
-
-      if (range === '1w') start.setDate(now.getDate() - 7);
-      if (range === '2w') start.setDate(now.getDate() - 14);
-      if (range === '1m') start.setMonth(now.getMonth() - 1);
-      if (range === '6m') start.setMonth(now.getMonth() - 6);
-      if (range === 'this_month') {
-        start = new Date(now.getFullYear(), now.getMonth(), 1);
-      }
-
-      // Format YYYY-MM-DD
-      const startStr = start.toISOString().split('T')[0];
-      const endStr = new Date(now.getTime() + 86400000).toISOString().split('T')[0];
-
-      loadTxns(startStr, endStr);
+      loadTxns();
     }
 
     function applyCustomFilter() {
       const start = document.getElementById('startDate').value;
-      const end = document.getElementById('endDate').value;
-      if (!start || !end) return alert("Please select both dates");
-      loadTxns(start, end + ' 23:59:59');
+      const end   = document.getElementById('endDate').value;
+      if (!start || !end) { alert('Please select both dates'); return; }
+      document.querySelectorAll('.filter-pill .btn').forEach(b => b.classList.remove('active-filter'));
+      state.status    = null;
+      state.startDate = start;
+      state.endDate   = end + ' 23:59:59';
+      state.page      = 1;
+      loadTxns();
     }
 
     function resetFilters() {
       document.getElementById('startDate').value = '';
-      document.getElementById('endDate').value = '';
+      document.getElementById('endDate').value   = '';
+      document.querySelectorAll('.filter-pill .btn').forEach(b => b.classList.remove('active-filter'));
+      state.status    = null;
+      state.startDate = null;
+      state.endDate   = null;
+      state.page      = 1;
       loadTxns();
     }
+
+    // ── Checkbox helpers ──────────────────────────────────────────────────────
+    function toggleSelectAll(cb) {
+      document.querySelectorAll('.row-cb').forEach(c => { c.checked = cb.checked; });
+      updateSelCount();
+    }
+
+    function getSelectedIds() {
+      return [...document.querySelectorAll('.row-cb:checked')].map(c => c.dataset.id);
+    }
+
+    function updateSelCount() {
+      const n = getSelectedIds().length;
+      document.getElementById('selCount').textContent = n ? `${n} selected` : '0 selected';
+      document.getElementById('btnDispSel').style.display = n ? '' : 'none';
+      document.getElementById('btnDelSel').style.display  = n ? '' : 'none';
+    }
+
+    // ── Dispute ───────────────────────────────────────────────────────────────
+    async function toggleDispute(tid, btn) {
+      btn.disabled = true;
+      try {
+        const res  = await fetch(`${API_BASE}/api/transactions/${tid}/dispute`, {
+          method: 'POST', headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Could not update dispute status'); btn.disabled = false; return; }
+
+        const row       = document.getElementById(`row-${tid}`);
+        const badgeCell = row.querySelector('.badge');
+        const isDisp    = data.disputed;
+        if (isDisp) {
+          badgeCell.className = 'badge badge-disputed';
+          badgeCell.textContent = '⚑ Disputed';
+          btn.classList.add('active');
+          btn.title = 'Remove dispute flag';
+        } else {
+          // Restore fraud / safe badge from data attribute
+          const isFraud = row.dataset.fraud === '1';
+          badgeCell.className = 'badge ' + (isFraud ? 'badge-fraud' : 'badge-safe');
+          badgeCell.textContent = isFraud ? '⚠ Flagged' : '✓ Safe';
+          btn.classList.remove('active');
+          btn.title = 'Flag as disputed';
+        }
+      } catch (e) {
+        alert('Connection error');
+      }
+      btn.disabled = false;
+    }
+
+    async function disputeSelected() {
+      const ids = getSelectedIds();
+      if (!ids.length) return;
+      if (!confirm(`Flag ${ids.length} transaction(s) as disputed?`)) return;
+      for (const id of ids) {
+        const btn = document.querySelector(`#row-${id} .btn-dispute`);
+        if (btn) await toggleDispute(id, btn);
+      }
+      updateSelCount();
+    }
+
+    // ── Delete ────────────────────────────────────────────────────────────────
+    async function deleteTxn(tid) {
+      if (!confirm('Delete this transaction? This cannot be undone.')) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/transactions/${tid}`, {
+          method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+          document.getElementById(`row-${tid}`)?.remove();
+          state.total = Math.max(0, state.total - 1);
+          renderSummary({});  // will be stale; reload is cleaner
+          loadTxns();
+        } else {
+          const d = await res.json();
+          alert(d.error || 'Failed to delete transaction');
+        }
+      } catch (e) { alert('Connection error'); }
+    }
+
+    async function deleteSelected() {
+      const ids = getSelectedIds();
+      if (!ids.length) return;
+      if (!confirm(`Permanently delete ${ids.length} transaction(s)? This cannot be undone.`)) return;
+      try {
+        const res  = await fetch(`${API_BASE}/api/transactions/bulk-delete`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids })
+        });
+        const data = await res.json();
+        if (res.ok) { loadTxns(); } else { alert(data.error || 'Bulk delete failed'); }
+      } catch (e) { alert('Connection error'); }
+    }
+
+    async function clearAll() {
+      const total = state.total;
+      if (!confirm(`This will PERMANENTLY DELETE all ${total} transaction(s) in the current filter.\n\nType OK to confirm.`)) return;
+      const confirm2 = window.prompt(`Type DELETE to confirm removing all ${total} transaction(s).`);
+      if (confirm2 !== 'DELETE') { alert('Cancelled.'); return; }
+      try {
+        // Build query params matching current filter
+        let url = `${API_BASE}/api/transactions/bulk-delete`;
+        const body = {};   // no ids = delete all matching user's transactions (current filter applies server-side by user_id only)
+        const res  = await fetch(url, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Deleted ${data.deleted_count} transaction(s).`);
+          state.page      = 1;
+          state.status    = null;
+          state.startDate = null;
+          state.endDate   = null;
+          loadTxns();
+        } else {
+          alert(data.error || 'Clear all failed');
+        }
+      } catch (e) { alert('Connection error'); }
+    }
   </script>
-  <!-- Curved Background Animation -->
   <script src="/static/js/curved-bg.js"></script>
 </body>
 

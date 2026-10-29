@@ -8,7 +8,7 @@
   <style>
     .auth-container {
       display: flex;
-      height: 100vh;
+      min-height: 100vh;
       overflow: hidden;
     }
 
@@ -25,17 +25,39 @@
     .auth-right {
       flex: 1;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
+      padding: 2rem 1rem;
+      overflow-y: auto;
     }
 
     .auth-box {
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
+      margin-top: 1rem;
     }
 
-    .hidden {
-      display: none;
+    .hidden { display: none; }
+
+    .back-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #888;
+      font-size: 0.82rem;
+      text-decoration: none;
+      margin-bottom: 1.25rem;
+      padding: 6px 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .back-home:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+    @media (max-width: 680px) {
+      .auth-container { flex-direction: column; }
+      .auth-left { min-height: 180px; flex: none; }
+      .auth-right { flex: 1; }
     }
   </style>
 </head>
@@ -50,6 +72,7 @@
     </div>
     <div class="auth-right">
       <div class="auth-box glass card">
+        <a href="/" class="back-home">← Back to Home</a>
 
         <!-- Login Form -->
         <div id="loginForm">
@@ -71,8 +94,6 @@
             <input type="text" id="regName" placeholder="Full Name" required>
             <input type="email" id="regEmail" placeholder="Email Address" required>
             <input type="password" id="regPass" placeholder="Password" required>
-            <input type="number" id="regBalance" placeholder="Initial Deposit (₹) (Optional)"
-              style="margin-bottom: 1rem;">
             <button type="submit" class="btn" style="width: 100%">Register</button>
           </form>
           <p class="text-center mt-2">
@@ -132,9 +153,7 @@
   </div>
 
   <script>
-    // Use the current hostname to connect to the backend on port 5000
-    const API_BASE = `http://${window.location.hostname || '127.0.0.1'}:5000`;
-    console.log("API_BASE set to:", API_BASE);
+    const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
 
     // Store email for multi-step flows
     let currentEmail = '';
@@ -218,7 +237,7 @@
             console.warn("localStorage full, continuing anyway:", storageErr);
             // Even if storage is full, we try to proceed to dashboard
           }
-          window.location.href = 'dashboard.html';
+          window.location.href = '/dashboard';
         } else {
           const msg = data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Login failed');
           document.getElementById('message').innerText = msg;
@@ -242,13 +261,11 @@
       const name = document.getElementById('regName').value;
       const email = document.getElementById('regEmail').value;
       const password = document.getElementById('regPass').value;
-      const balance = document.getElementById('regBalance').value;
-
       try {
         const res = await fetch(`${API_BASE}/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password, initial_balance: balance })
+          body: JSON.stringify({ name, email, password })
         });
         const data = await res.json();
 

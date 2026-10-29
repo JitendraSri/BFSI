@@ -4,20 +4,103 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BFSI Intelligence - AI-Powered Financial Security</title>
+  <meta name="description" content="BFSI Intelligence — AI-powered fraud detection and FinRAG Copilot for private financial document Q&A. 88% Recall@10 on FinDER benchmark.">
+  <title>BFSI Intelligence - AI-Powered Financial Security & FinRAG Copilot</title>
   <link rel="stylesheet" href="/static/css/styles.css?v=4">
   <link rel="stylesheet" href="/static/css/hero.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
+  <style>
+    html { scroll-behavior: smooth; }
+
+    /* ── Smooth reveal transitions ── */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.55s ease, transform 0.55s ease; }
+    .reveal.show { opacity: 1; transform: translateY(0); }
+    .fade-up { opacity: 0; transform: translateY(18px); transition: opacity 0.45s ease, transform 0.45s ease; }
+    .fade-up.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Benchmark stats strip ── */
+    .bench-strip {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.25rem;
+      padding: 3rem 5vw 3.5rem;
+    }
+    .bench-stat {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      min-width: 170px;
+      flex: 1 1 160px;
+      transition: border-color 0.3s, transform 0.3s;
+      will-change: transform;
+    }
+    .bench-stat:hover { border-color: rgba(46,204,113,0.4); transform: translateY(-3px); }
+    .bench-stat .stat-num {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+    .bench-stat .stat-label { font-size: 0.78rem; color: #888; text-transform: uppercase; letter-spacing: 0.06em; }
+    .bench-stat .stat-sub { font-size: 0.72rem; color: #555; margin-top: 4px; }
+
+    /* ── FinRAG pipeline diagram ── */
+    .pipeline-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 2rem 0;
+    }
+    .pipe-step {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      padding: 0.65rem 1.1rem;
+      font-size: 0.82rem;
+      color: #ccc;
+      white-space: nowrap;
+    }
+    .pipe-arrow { color: #444; font-size: 1.1rem; }
+
+    /* ── Feature card hover ── */
+    .feature-card {
+      transition: transform 0.3s ease, border-color 0.3s ease;
+      will-change: transform;
+    }
+    .feature-card:hover { transform: translateY(-4px); }
+
+    /* ── How it works arrows ── */
+    .step { transition: transform 0.3s; }
+    .step:hover { transform: scale(1.04); }
+
+    /* ── Audience tags ── */
+    .audience-tag { transition: background 0.2s, transform 0.2s; }
+    .audience-tag:hover { background: rgba(46,204,113,0.15); transform: scale(1.04); }
+
+    /* ── CTA pulse ── */
+    .cta-section { text-align: center; padding: 5rem 5vw; }
+    @media (max-width: 700px) {
+      .bench-stat { min-width: 130px; padding: 1.1rem 1rem; }
+      .bench-stat .stat-num { font-size: 1.7rem; }
+      .pipeline-row { gap: 0.3rem; }
+    }
+  </style>
 </head>
 
 <body>
   <script src="/static/js/navbar.js?v=2"></script>
   <script src="/static/js/hero.js" defer></script>
 
-  <!-- 1. HERO SECTION -->
+  <!-- ══════════════════════════════════════════════════
+       1. HERO SECTION
+  ══════════════════════════════════════════════════ -->
   <section class="hero-saas">
-    <!-- Background Effects -->
     <div class="hero-bg-effects">
       <div class="hero-mesh"></div>
       <div class="hero-noise"></div>
@@ -27,30 +110,33 @@
     <div class="cursor-light"></div>
 
     <div class="hero-container">
-      <!-- LEFT COLUMN -->
+      <!-- LEFT -->
       <div class="hero-left">
+        <div style="display:inline-flex; align-items:center; gap:0.5rem; background:rgba(46,204,113,0.1); border:1px solid rgba(46,204,113,0.3); border-radius:20px; padding:5px 14px; font-size:0.78rem; color:#2ecc71; margin-bottom:1.2rem; font-weight:600; letter-spacing:0.04em;">
+          ✨ &nbsp;88% Recall@10 on FinDER Benchmark
+        </div>
         <h1 class="hero-headline">
-          Predict Financial Fraud<br>
-          <span class="text-gradient">Before It Happens</span>
+          AI-Powered Fraud<br>Detection &amp;
+          <span class="text-gradient">FinRAG Copilot</span>
         </h1>
         <p class="hero-description">
-          Detect fraudulent transactions in real time using advanced Machine Learning, behavioral analytics, anomaly detection and AI-powered financial intelligence.
+          Detect fraudulent transactions in real time with ML — and ask questions about your private financial documents with page-level citations. One platform. No data leaves your server.
         </p>
-        
+
         <div class="hero-cta">
-          <a href="auth.html" class="btn-premium btn-primary">Start Free Trial</a>
-          <a href="#how-it-works" class="btn-premium btn-secondary">Watch Demo</a>
+          <a href="/login" class="btn-premium btn-primary">Get Started Free</a>
+          <a href="#how-it-works" class="btn-premium btn-secondary">See How It Works</a>
         </div>
 
         <div class="hero-trust">
-          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> AI Powered</div>
-          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> Enterprise Security</div>
-          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> ISO Ready</div>
-          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> Real-time Monitoring</div>
+          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> ML Fraud Detection</div>
+          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> Private RAG Q&amp;A</div>
+          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> 48 SEC 10-K Reports</div>
+          <div class="trust-item"><span class="trust-icon"><i class="fas fa-check"></i></span> JWT + OTP Security</div>
         </div>
       </div>
 
-      <!-- RIGHT COLUMN -->
+      <!-- RIGHT — dual panel -->
       <div class="hero-right">
         <div class="dashboard-wrapper">
           <!-- Main Dashboard Panel -->
@@ -59,25 +145,21 @@
               <div class="dash-title">AI Transaction Monitoring</div>
               <div class="dash-status"><i class="fas fa-signal" style="color: #00D4FF;"></i></div>
             </div>
-
             <div class="dash-stats-grid">
               <div class="mini-stat">
-                <div class="mini-stat-label">Accuracy</div>
+                <div class="mini-stat-label">Fraud Accuracy</div>
                 <div class="mini-stat-value text-success"><span class="animate-counter" data-target="98.7" data-float="true">0</span>%</div>
               </div>
               <div class="mini-stat">
-                <div class="mini-stat-label">Protected</div>
-                <div class="mini-stat-value text-success">$<span class="animate-counter" data-target="4.8" data-float="true">0</span>B</div>
+                <div class="mini-stat-label">RAG Recall@10</div>
+                <div class="mini-stat-value text-success"><span class="animate-counter" data-target="88" data-float="false">0</span>%</div>
               </div>
             </div>
-
-            <!-- Network Visualization -->
             <div class="network-viz">
               <div class="connection conn-1"></div>
               <div class="connection conn-2"></div>
               <div class="connection conn-3"></div>
               <div class="connection conn-4"></div>
-              
               <div class="node node-center"></div>
               <div class="node node-1"></div>
               <div class="node node-2"></div>
@@ -86,32 +168,26 @@
             </div>
           </div>
 
-          <!-- Floating Risk Score Gauge -->
+          <!-- Floating Risk Score -->
           <div class="glass-panel float-card-1">
-            <div class="gauge-circle">
-              <span>94</span>
-            </div>
-            <div style="font-size: 0.8rem; color: #ccc; font-weight: 600;">Risk Score</div>
+            <div class="gauge-circle"><span>94</span></div>
+            <div style="font-size:0.8rem; color:#ccc; font-weight:600;">Risk Score</div>
           </div>
 
-          <!-- Floating Alerts -->
+          <!-- Floating RAG query card -->
           <div class="glass-panel float-card-2">
             <div class="alert-header">
-              <span><i class="fas fa-exclamation-triangle"></i> Fraud Alert Detected</span>
-              <span>Just now</span>
+              <span><i class="fas fa-search"></i> FinRAG Query</span>
+              <span style="color:#2ecc71; font-size:0.7rem;">Answered</span>
             </div>
             <div class="alert-body">
-              <div class="feed-row">
-                <span>TXN-9842</span>
-                <span class="text-danger">Blocked</span>
+              <div class="feed-row" style="flex-direction:column; align-items:flex-start; gap:0.25rem;">
+                <span style="color:#aaa; font-size:0.73rem;">Q: What is AAPL's revenue in FY24?</span>
+                <span style="color:#2ecc71; font-size:0.73rem;">A: $391.0B — Apple 10-K, p.34 ✓</span>
               </div>
-              <div class="feed-row">
-                <span>TXN-9841</span>
-                <span class="text-success">Verified</span>
-              </div>
-              <div class="feed-row">
-                <span>TXN-9840</span>
-                <span class="text-success">Verified</span>
+              <div class="feed-row" style="margin-top:0.4rem;">
+                <span style="color:#888; font-size:0.7rem;">Confidence</span>
+                <span style="color:#2ecc71; font-size:0.7rem; font-weight:700;">High · 0.94</span>
               </div>
             </div>
           </div>
@@ -120,131 +196,222 @@
     </div>
   </section>
 
-  <!-- 2. FEATURES SECTION -->
+  <!-- ══════════════════════════════════════════════════
+       2. BENCHMARK STATS STRIP
+  ══════════════════════════════════════════════════ -->
+  <div class="bench-strip reveal">
+    <div class="bench-stat">
+      <div class="stat-num" style="color:#2ecc71;">88%</div>
+      <div class="stat-label">FinRAG Recall@10</div>
+      <div class="stat-sub">FinDER benchmark · full pipeline</div>
+    </div>
+    <div class="bench-stat">
+      <div class="stat-num" style="color:#60a5fa;">0.713</div>
+      <div class="stat-label">MRR (FinDER)</div>
+      <div class="stat-sub">vs base paper 0.730 MRR</div>
+    </div>
+    <div class="bench-stat">
+      <div class="stat-num" style="color:#f59e0b;">98.7%</div>
+      <div class="stat-label">Fraud Accuracy</div>
+      <div class="stat-sub">Random Forest on BankSim</div>
+    </div>
+    <div class="bench-stat">
+      <div class="stat-num" style="color:#c4b5fd;">48</div>
+      <div class="stat-label">SEC 10-K Reports</div>
+      <div class="stat-sub">Fortune 500 · pre-indexed</div>
+    </div>
+    <div class="bench-stat">
+      <div class="stat-num" style="color:#34d399;">5</div>
+      <div class="stat-label">RAG Pipelines</div>
+      <div class="stat-sub">sparse · dense · hybrid · rerank · full</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       3. FEATURES SECTION
+  ══════════════════════════════════════════════════ -->
   <section id="features" class="reveal">
-    <h2 class="section-title">Why Choose <span>BFSI Intelligence</span>?</h2>
+    <h2 class="section-title">Everything You Need for <span>Financial Intelligence</span></h2>
 
     <div class="features-grid">
       <div class="glass feature-card">
-        <i class="fas fa-shield-alt feature-icon" style="color: #e74c3c;"></i>
+        <i class="fas fa-shield-alt feature-icon" style="color:#e74c3c;"></i>
         <h3>AI Fraud Detection</h3>
-        <p>Detect anomalies and suspicious patterns in real-time using our trained Random Forest models.</p>
+        <p>Real-time ML scoring on every transaction — Random Forest with 98.7% accuracy trained on 500K+ synthetic bank records.</p>
       </div>
 
       <div class="glass feature-card">
-        <i class="fas fa-chart-line feature-icon" style="color: #2ecc71;"></i>
-        <h3>Transaction Risk Scoring</h3>
-        <p>Every transaction gets a risk score (High, Medium, Low) to help you prioritize reviews.</p>
+        <i class="fas fa-search feature-icon" style="color:#60a5fa;"></i>
+        <h3>FinRAG Copilot</h3>
+        <p>Ask questions about your uploaded PDFs and 48 pre-loaded SEC 10-K filings. Answers include exact page + passage citations.</p>
       </div>
 
       <div class="glass feature-card">
-        <i class="fas fa-bell feature-icon" style="color: #f1c40f;"></i>
-        <h3>Smart Alerts System</h3>
-        <p>Get instant notifications for high-risk activities so your team can act immediately.</p>
+        <i class="fas fa-layer-group feature-icon" style="color:#2ecc71;"></i>
+        <h3>Hybrid Retrieval Pipeline</h3>
+        <p>BM25 + TF-IDF sparse retrieval fused with Gemini dense embeddings via RRF, then reranked by metadata — 88% Recall@10.</p>
       </div>
 
       <div class="glass feature-card">
-        <i class="fas fa-file-upload feature-icon" style="color: #3498db;"></i>
+        <i class="fas fa-file-upload feature-icon" style="color:#3498db;"></i>
         <h3>Secure Data Upload</h3>
-        <p>Support for CSV, Excel, and AI-powered Parsing for PDF/Image documents.</p>
+        <p>Import bank statements (CSV, Excel, PDF) and financial documents. All data stays in your MongoDB instance — never shared.</p>
       </div>
 
       <div class="glass feature-card">
-        <i class="fas fa-search-dollar feature-icon" style="color: #9b59b6;"></i>
-        <h3>Real-time Insights</h3>
-        <p>Visual dashboards with live metrics, trends, and actionable intelligence.</p>
+        <i class="fas fa-brain feature-icon" style="color:#e67e22;"></i>
+        <h3>HyDE + Multi-Hop Queries</h3>
+        <p>Hypothetical Document Embeddings and automatic sub-question decomposition for complex multi-step financial questions.</p>
       </div>
 
       <div class="glass feature-card">
-        <i class="fas fa-brain feature-icon" style="color: #e67e22;"></i>
+        <i class="fas fa-chart-line feature-icon" style="color:#9b59b6;"></i>
         <h3>Predictive Analytics</h3>
-        <p>AI suggests model improvements and strategies to stay ahead of new fraud techniques.</p>
+        <p>Spending forecast, anomaly detection, credit score estimation, and recurring payment analysis from your transaction history.</p>
       </div>
     </div>
   </section>
 
-  <!-- 3. HOW IT WORKS -->
-  <section id="how-it-works" class="reveal" style="background: rgba(0,0,0,0.2);">
+  <!-- ══════════════════════════════════════════════════
+       4. FINRAG PIPELINE EXPLAINER
+  ══════════════════════════════════════════════════ -->
+  <section class="reveal" style="padding: 3.5rem 5vw; background: rgba(0,0,0,0.15);">
+    <h2 class="section-title">FinRAG Retrieval <span>Pipeline</span></h2>
+    <p style="text-align:center; color:#888; font-size:0.9rem; max-width:600px; margin:0 auto 2rem;">
+      Five configurations benchmarked on FinDER — 25 questions against 630 expert-annotated 10-K passages.
+    </p>
+
+    <div class="pipeline-row">
+      <div class="pipe-step" style="border-color:rgba(96,165,250,0.3); color:#60a5fa;">📄 Your Query</div>
+      <span class="pipe-arrow">→</span>
+      <div class="pipe-step">HyDE Expansion</div>
+      <span class="pipe-arrow">→</span>
+      <div class="pipe-step">BM25 + TF-IDF</div>
+      <span class="pipe-arrow">+</span>
+      <div class="pipe-step">Gemini Embeddings</div>
+      <span class="pipe-arrow">→</span>
+      <div class="pipe-step">RRF Fusion</div>
+      <span class="pipe-arrow">→</span>
+      <div class="pipe-step">Metadata Reranker</div>
+      <span class="pipe-arrow">→</span>
+      <div class="pipe-step" style="border-color:rgba(46,204,113,0.4); color:#2ecc71;">✅ Cited Answer</div>
+    </div>
+
+    <!-- Mini ablation strip -->
+    <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:1rem; margin-top:1.5rem;">
+      <div style="background:rgba(96,165,250,0.07); border:1px solid rgba(96,165,250,0.2); border-radius:10px; padding:0.75rem 1.25rem; text-align:center; min-width:120px;">
+        <div style="font-size:1.3rem; font-weight:800; color:#60a5fa;">64%</div>
+        <div style="font-size:0.7rem; color:#666;">Sparse only</div>
+      </div>
+      <div style="background:rgba(52,211,153,0.07); border:1px solid rgba(52,211,153,0.2); border-radius:10px; padding:0.75rem 1.25rem; text-align:center; min-width:120px;">
+        <div style="font-size:1.3rem; font-weight:800; color:#34d399;">88%</div>
+        <div style="font-size:0.7rem; color:#666;">Dense only</div>
+      </div>
+      <div style="background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.2); border-radius:10px; padding:0.75rem 1.25rem; text-align:center; min-width:120px;">
+        <div style="font-size:1.3rem; font-weight:800; color:#f59e0b;">72%</div>
+        <div style="font-size:0.7rem; color:#666;">Hybrid RRF</div>
+      </div>
+      <div style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); border-radius:10px; padding:0.75rem 1.25rem; text-align:center; min-width:120px;">
+        <div style="font-size:1.3rem; font-weight:800; color:#a78bfa;">88% ⭐</div>
+        <div style="font-size:0.7rem; color:#666;">Full FinRAG</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:0.75rem 1.25rem; text-align:center; min-width:120px; opacity:0.6;">
+        <div style="font-size:1.3rem; font-weight:800; color:#888;">85%</div>
+        <div style="font-size:0.7rem; color:#555;">Base paper</div>
+      </div>
+    </div>
+    <p style="text-align:center; color:#555; font-size:0.72rem; margin-top:1rem;">
+      Dadopoulos et al., arXiv:2510.24402 · FinDER dataset · Recall@10
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════
+       5. HOW IT WORKS
+  ══════════════════════════════════════════════════ -->
+  <section id="how-it-works" class="reveal">
     <h2 class="section-title">How It <span>Works</span></h2>
 
     <div class="timeline">
       <div class="step">
         <div class="step-num">1</div>
         <h3>Upload Data</h3>
-        <p>Upload transaction logs via CSV, Excel, or Documents.</p>
+        <p>Import bank statements (CSV, Excel, PDF) or financial documents for the RAG engine.</p>
       </div>
-      <div style="font-size: 2rem; color: #555;">&rarr;</div>
+      <div style="font-size:2rem; color:#555;">&rarr;</div>
       <div class="step">
         <div class="step-num">2</div>
-        <h3>AI Analysis</h3>
-        <p>Our ML Engine analyzes patterns & anomalies.</p>
+        <h3>ML Fraud Scan</h3>
+        <p>Every transaction is scored in real time — flagged, verified, or disputed with one click.</p>
       </div>
-      <div style="font-size: 2rem; color: #555;">&rarr;</div>
+      <div style="font-size:2rem; color:#555;">&rarr;</div>
       <div class="step">
         <div class="step-num">3</div>
-        <h3>Risk Detection</h3>
-        <p>Fraud is flagged and Risk Scores are assigned.</p>
+        <h3>FinRAG Indexing</h3>
+        <p>Documents are chunked, embedded, and indexed into a local BM25 + vector store — no cloud.</p>
       </div>
-      <div style="font-size: 2rem; color: #555;">&rarr;</div>
+      <div style="font-size:2rem; color:#555;">&rarr;</div>
       <div class="step">
         <div class="step-num">4</div>
-        <h3>Actionable Insights</h3>
-        <p>View dashboards, alerts, and detailed reports.</p>
+        <h3>Ask &amp; Cite</h3>
+        <p>Ask any financial question — FinRAG returns the answer with exact page and passage citations.</p>
+      </div>
+      <div style="font-size:2rem; color:#555;">&rarr;</div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <h3>Act on Insights</h3>
+        <p>View dashboards, fraud alerts, credit score, investment tracker, and EMI planner.</p>
       </div>
     </div>
   </section>
 
-  <!-- 4. WHO SHOULD USE THIS -->
-  <section id="audience" class="reveal">
+  <!-- ══════════════════════════════════════════════════
+       6. WHO SHOULD USE THIS
+  ══════════════════════════════════════════════════ -->
+  <section id="audience" class="reveal" style="background: rgba(0,0,0,0.1);">
     <h2 class="section-title">Who Should Use <span>This?</span></h2>
     <div class="audience-list">
-      <div class="audience-tag">🏦 Banks & Credit Unions</div>
+      <div class="audience-tag">🏦 Banks &amp; Credit Unions</div>
       <div class="audience-tag">💳 FinTech Companies</div>
-      <div class="audience-tag">🕵️‍ Cyber Crime Units</div>
+      <div class="audience-tag">📄 Financial Analysts</div>
+      <div class="audience-tag">🕵️ Cyber Crime Units</div>
       <div class="audience-tag">📉 Risk Management Teams</div>
       <div class="audience-tag">🏛️ Government Agencies</div>
-      <div class="audience-tag">🛡️ Insurance Firms</div>
+      <div class="audience-tag">🎓 Finance Researchers</div>
+      <div class="audience-tag">🛡️ Insurance &amp; Compliance</div>
     </div>
   </section>
 
-  <!-- 5. CTA SECTION -->
+  <!-- ══════════════════════════════════════════════════
+       7. CTA
+  ══════════════════════════════════════════════════ -->
   <div class="cta-section cta-pulse reveal">
-    <h2>Start Protecting Your Transactions Today</h2>
-    <p style="margin: 1.5rem 0 2.5rem; color: #ddd; font-size: 1.1rem;">
-      Join thousands of financial institutions using BFSI Intelligence to secure their future.
+    <h2>Start Protecting &amp; Querying Your Finances Today</h2>
+    <p style="margin:1.5rem 0 2.5rem; color:#ddd; font-size:1.05rem; max-width:560px; margin-left:auto; margin-right:auto;">
+      Join the platform that combines real-time ML fraud detection with a private, cited RAG engine — built for financial data, benchmarked against the best.
     </p>
     <div class="hero-btns">
-      <a href="auth.html" class="btn btn-large" style="background: white; color: var(--primary);">Login Now</a>
-      <a href="auth.html" class="btn btn-outline btn-large">Sign Up Free</a>
+      <a href="/login" class="btn btn-large" style="background:white; color:var(--primary);">Login Now</a>
+      <a href="/login" class="btn btn-outline btn-large">Sign Up Free</a>
     </div>
   </div>
 
-  <footer style="text-align: center; padding: 2rem; color: #555; font-size: 0.9rem;">
-    &copy; 2025 BFSI Intelligence Platform. All rights reserved.
+  <footer style="text-align:center; padding:2rem; color:#444; font-size:0.85rem; border-top:1px solid rgba(255,255,255,0.06);">
+    &copy; 2026 BFSI Intelligence Platform &nbsp;·&nbsp; FinRAG Copilot &nbsp;·&nbsp; All rights reserved.
   </footer>
 
-  <!-- Scroll Observer Script -->
+  <!-- Scroll observer + smooth reveal -->
   <script>
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    };
-
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('show');
-          // Once shown, we can unobserve if we only want it to happen once
-          // observer.unobserve(entry.target);
+          observer.unobserve(entry.target);
         }
       });
-    }, observerOptions);
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
 
-    document.querySelectorAll('.reveal, .fade-up').forEach(el => {
-      observer.observe(el);
-    });
+    document.querySelectorAll('.reveal, .fade-up').forEach(el => observer.observe(el));
   </script>
-
 </body>
 
 </html>

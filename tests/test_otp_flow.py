@@ -163,6 +163,120 @@ class OtpFlowTests(unittest.TestCase):
         self.assertIn('otp_hash', update['$unset'])
         self.assertIn('otp_expiry', update['$unset'])
 
+    def test_login_requires_verified_email_before_issuing_session(self):
+        password_hash = application.bcrypt.hashpw(b'correct-password', application.bcrypt.gensalt()).decode('utf-8')
+        user = {
+            'user_id': 'user-id',
+            'email': 'user@example.test',
+            'password_hash': password_hash,
+        }
+        self.users.find_one.return_value = user
+        for verification_value in (False, 0, None):
+            user['is_verified'] = verification_value
+            pending = self.client.post('/login', json={
+                'email': 'user@example.test',
+                'password': 'correct-password',
+            })
+            self.assertEqual(pending.status_code, 403)
+
+        user.pop('is_verified')
+        missing_status = self.client.post('/login', json={
+            'email': 'user@example.test',
+            'password': 'correct-password',
+        })
+        self.assertEqual(missing_status.status_code, 403)
+
+        user['is_verified'] = True
+        verified = self.client.post('/login', json={
+            'email': 'user@example.test',
+            'password': 'correct-password',
+        })
+        self.assertEqual(verified.status_code, 200)
+        self.assertTrue(verified.get_json()['user']['is_verified'])
+
+    def test_forgot_password_uses_separate_reset_otp_and_generic_response(self):
+        self.users.find_one.return_value = {
+            'user_id': 'user-id',
+            'email': 'user@example.test',
+            'is_verified': True,
+        }
+        self.users.update_one.return_value.matched_count = 1
+        with patch.object(application, 'send_otp_email', return_value=True) as send_email:
+            response = self.client.post('/forgot-password', json={'email': 'USER@example.test'})
+
+        self.assertEqual(response.status_code, 202)
+        self.assertIn('If a verified account exists', response.get_json()['message'])
+        update = self.users.update_one.call_args.args[1]['$set']
+        self.assertIn('password_reset_otp_hash', update)
+        self.assertIn('password_reset_otp_expiry', update)
+        self.assertNotIn('otp_hash', update)
+        send_email.assert_called_once()
+
+    def test_password_reset_consumes_only_reset_otp_and_preserves_verification(self):
+        email = 'user@example.test'
+        self.users.find_one.return_value = {
+            'email': email,
+            'is_verified': True,
+            'otp_hash': application._otp_digest(email, '123456'),
+            'otp_expiry': datetime.datetime.now() + datetime.timedelta(minutes=5),
+            'password_reset_otp_hash': application._otp_digest(email, '654321'),
+            'password_reset_otp_expiry': datetime.datetime.now() + datetime.timedelta(minutes=5),
+        }
+        self.users.update_one.return_value = SimpleNamespace(modified_count=1)
+
+        response = self.client.post('/reset-password', json={
+            'email': email,
+            'otp': '654321',
+            'new_password': 'a-long-new-password',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        update = self.users.update_one.call_args.args[1]
+        self.assertIn('password_hash', update['$set'])
+        self.assertNotIn('is_verified', update['$set'])
+        self.assertIn('password_reset_otp_hash', update['$unset'])
+        self.assertNotIn('otp_hash', update['$unset'])
+
+    def test_password_reset_rejects_registration_otp_and_short_password(self):
+        email = 'user@example.test'
+        self.users.find_one.return_value = {
+            'email': email,
+            'is_verified': True,
+            'otp_hash': application._otp_digest(email, '123456'),
+            'otp_expiry': datetime.datetime.now() + datetime.timedelta(minutes=5),
+        }
+
+        registration_code = self.client.post('/reset-password', json={
+            'email': email,
+            'otp': '123456',
+            'new_password': 'a-long-new-password',
+        })
+        self.assertEqual(registration_code.status_code, 400)
+
+        short_password = self.client.post('/reset-password', json={
+            'email': email,
+            'otp': '654321',
+            'new_password': 'short',
+        })
+        self.assertEqual(short_password.status_code, 400)
+        self.users.update_one.assert_not_called()
+
+    def test_password_reset_cannot_verify_an_unverified_account(self):
+        email = 'pending@example.test'
+        self.users.find_one.return_value = {
+            'email': email,
+            'is_verified': False,
+            'password_reset_otp_hash': application._otp_digest(email, '654321'),
+            'password_reset_otp_expiry': datetime.datetime.now() + datetime.timedelta(minutes=5),
+        }
+        response = self.client.post('/reset-password', json={
+            'email': email,
+            'otp': '654321',
+            'new_password': 'a-long-new-password',
+        })
+        self.assertEqual(response.status_code, 400)
+        self.users.update_one.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

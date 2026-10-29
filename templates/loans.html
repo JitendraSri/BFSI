@@ -228,10 +228,10 @@
             }
             box.textContent = 'Calculating illustrative affordability…';
 
-            const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+            const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = 'auth.html';
+                window.location.href = '/login';
                 return;
             }
 

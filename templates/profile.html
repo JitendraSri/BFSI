@@ -101,12 +101,52 @@
         <button class="btn" style="background:#e74c3c" onclick="logout()">Logout</button>
       </div>
     </div>
+
+    <!-- Change Password -->
+    <div class="glass card profile-card" style="max-width:500px; margin: 1.5rem auto;">
+      <h3 style="margin-bottom:1.5rem;">🔒 Change Password</h3>
+      <div id="pwdMsg" class="mt-2" style="margin-bottom:0.5rem;"></div>
+      <div class="form-group">
+        <label>Current Password</label>
+        <input type="password" id="currentPwd" placeholder="Enter current password">
+      </div>
+      <div class="form-group">
+        <label>New Password</label>
+        <input type="password" id="newPwd" placeholder="Enter new password">
+      </div>
+      <div class="form-group">
+        <label>Confirm New Password</label>
+        <input type="password" id="confirmPwd" placeholder="Confirm new password">
+      </div>
+      <button class="btn" style="width:100%;" onclick="changePassword()">Update Password</button>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="glass card profile-card" style="max-width:500px; margin: 1.5rem auto; border: 1px solid rgba(231,76,60,0.4);">
+      <h3 style="color:#e74c3c; margin-bottom:0.5rem;">⚠️ Danger Zone</h3>
+      <p style="color:#aaa; font-size:0.85rem; margin-bottom:1.5rem;">Permanently deletes your account and all associated data. This cannot be undone.</p>
+      <div id="deleteMsg" style="margin-bottom:0.5rem;"></div>
+      <div id="deleteStep1">
+        <button class="btn" style="background:#e74c3c; width:100%;" onclick="requestDeleteOtp()">Delete My Account</button>
+      </div>
+      <div id="deleteStep2" style="display:none;">
+        <p style="color:#f39c12; font-size:0.85rem; margin-bottom:1rem;">An OTP has been sent to your email. Enter it below to confirm deletion.</p>
+        <div class="form-group">
+          <label>OTP Code</label>
+          <input type="text" id="deleteOtp" placeholder="6-digit code" maxlength="6">
+        </div>
+        <div style="display:flex; gap:1rem;">
+          <button class="btn" style="background:#e74c3c; flex:1;" onclick="confirmDelete()">Confirm Delete</button>
+          <button class="btn" style="background:#555; flex:1;" onclick="cancelDelete()">Cancel</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+    const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
     const token = localStorage.getItem('token');
-    if (!token) window.location.href = 'auth.html';
+    if (!token) window.location.href = '/login';
 
     let currentUser = {};
 
@@ -261,6 +301,80 @@
         // Cancel clicked (technically toggle back)
         if (currentUser.name) render(currentUser); // reset
       }
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+
+    async function changePassword() {
+      const current = document.getElementById('currentPwd').value;
+      const newPwd  = document.getElementById('newPwd').value;
+      const confirm = document.getElementById('confirmPwd').value;
+      const msg = document.getElementById('pwdMsg');
+      if (!current || !newPwd || !confirm) { msg.innerHTML = '<span style="color:#f39c12">Fill in all fields.</span>'; return; }
+      if (newPwd !== confirm) { msg.innerHTML = '<span style="color:#e74c3c">Passwords do not match.</span>'; return; }
+      try {
+        const res = await fetch(API_BASE + '/api/profile/change-password', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ current_password: current, new_password: newPwd })
+        });
+        const data = await res.json();
+        msg.innerHTML = res.ok
+          ? '<span style="color:#2ecc71">Password updated successfully.</span>'
+          : `<span style="color:#e74c3c">${data.error || 'Failed to update password.'}</span>`;
+        if (res.ok) { document.getElementById('currentPwd').value = ''; document.getElementById('newPwd').value = ''; document.getElementById('confirmPwd').value = ''; }
+      } catch(e) { msg.innerHTML = '<span style="color:#e74c3c">Connection error.</span>'; }
+    }
+
+    async function requestDeleteOtp() {
+      const msg = document.getElementById('deleteMsg');
+      try {
+        const res = await fetch(API_BASE + '/api/auth/delete-account-otp', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('deleteStep1').style.display = 'none';
+          document.getElementById('deleteStep2').style.display = 'block';
+          msg.innerHTML = '<span style="color:#2ecc71">OTP sent to your email.</span>';
+        } else {
+          msg.innerHTML = `<span style="color:#e74c3c">${data.error || 'Could not send OTP.'}</span>`;
+        }
+      } catch(e) { msg.innerHTML = '<span style="color:#e74c3c">Connection error.</span>'; }
+    }
+
+    async function confirmDelete() {
+      const otp = document.getElementById('deleteOtp').value.trim();
+      const msg = document.getElementById('deleteMsg');
+      if (!otp) { msg.innerHTML = '<span style="color:#f39c12">Enter the OTP.</span>'; return; }
+      try {
+        const res = await fetch(API_BASE + '/api/auth/delete-account', {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          alert('Account deleted. Goodbye!');
+          window.location.href = '/login';
+        } else {
+          msg.innerHTML = `<span style="color:#e74c3c">${data.error || 'Deletion failed.'}</span>`;
+        }
+      } catch(e) { msg.innerHTML = '<span style="color:#e74c3c">Connection error.</span>'; }
+    }
+
+    function cancelDelete() {
+      document.getElementById('deleteStep1').style.display = 'block';
+      document.getElementById('deleteStep2').style.display = 'none';
+      document.getElementById('deleteOtp').value = '';
+      document.getElementById('deleteMsg').innerHTML = '';
     }
 
     async function saveProfile() {

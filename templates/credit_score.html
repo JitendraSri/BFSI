@@ -3,98 +3,44 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Credit Score Simulator - BFSI Intelligence</title>
+    <title>Credit Health - BFSI Intelligence</title>
     <link rel="stylesheet" href="/static/css/styles.css?v=3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .score-circle {
-            width: 200px;
-            height: 200px;
+        .score-ring-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 1rem 0 1.5rem;
+        }
+        .score-ring {
+            width: 160px;
+            height: 160px;
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.3);
-            border: 10px solid #2ecc71;
+            border: 12px solid #555;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto;
             flex-direction: column;
-            position: relative;
             transition: border-color 0.5s;
         }
-
-        .score-val {
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: #fff;
-        }
-
-        .score-label {
-            color: #aaa;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 1px;
-        }
-
-        .simulator-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-        }
-
-        .sim-action {
+        .score-num { font-size: 2.8rem; font-weight: bold; }
+        .score-range { font-size: 0.7rem; color: #aaa; letter-spacing: 1px; text-transform: uppercase; }
+        .factor-row {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            margin-bottom: 0.5rem;
-            border-radius: 8px;
+            gap: 1rem;
+            padding: 0.85rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
         }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 20px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #555;
-            transition: .4s;
-            border-radius: 20px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked+.slider {
-            background-color: #3498db;
-        }
-
-        input:checked+.slider:before {
-            transform: translateX(20px);
+        .factor-row:last-child { border-bottom: none; }
+        .factor-bar-bg { flex: 1; background: rgba(255,255,255,0.1); border-radius: 99px; height: 7px; }
+        .factor-bar { height: 7px; border-radius: 99px; transition: width 0.8s ease; }
+        .factor-label { width: 200px; font-size: 0.82rem; color: #ccc; }
+        .factor-val { width: 60px; text-align: right; font-size: 0.82rem; font-weight: 600; }
+        .grade-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; border-radius: 50%; font-size: 0.75rem; font-weight: bold;
         }
     </style>
 </head>
@@ -103,141 +49,153 @@
     <script src="/static/js/navbar.js?v=7"></script>
 
     <div class="container">
-        <h1>🛡️ Credit Score Simulator</h1>
-        <p>Explore hypothetical scenarios. This is not an official credit score or lender assessment.</p>
-
-        <div class="simulator-grid mt-2">
-            <!-- Score Display -->
-            <div class="glass card" style="text-align: center;">
-                <h3>Your Simulated Score</h3>
-                <div class="score-circle" id="scoreCircle">
-                    <div class="score-val" id="scoreVal">650</div>
-                    <div class="score-label" id="scoreText">Illustrative baseline</div>
-                </div>
-                <div style="margin-top: 1.5rem; color: #ccc;">
-                    Example starting point only; real scoring models differ.
-                </div>
-                <button class="btn mt-2" onclick="saveScore()">Save Score to Profile</button>
-            </div>
-
-            <!-- Simulator Actions -->
-            <div class="glass card">
-                <h3>What-If Scenarios</h3>
-
-                <div class="sim-action">
-                    <span>Miss a Payment (30+ Days)</span>
-                    <label class="switch">
-                        <input type="checkbox" onchange="updateScore(-50, this)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="sim-action">
-                    <span>Pay off a Loan fully</span>
-                    <label class="switch">
-                        <input type="checkbox" onchange="updateScore(30, this)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="sim-action">
-                    <span>Credit Card Utilization > 80%</span>
-                    <label class="switch">
-                        <input type="checkbox" onchange="updateScore(-40, this)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="sim-action">
-                    <span>New Loan Application</span>
-                    <label class="switch">
-                        <input type="checkbox" onchange="updateScore(-10, this)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="sim-action">
-                    <span>Account Age > 5 Years</span>
-                    <label class="switch">
-                        <input type="checkbox" onchange="updateScore(20, this)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <h1 style="margin:0;">💳 Credit Health</h1>
+          <span class="info-icon" data-tip="Score estimated from 5 factors in your transaction data. Not a CIBIL/Experian score — for personal reference only.">ⓘ</span>
         </div>
+        <p style="color:#aaa; font-size:0.85rem; margin-top:0.3rem;">Estimated from your transaction history. Not an official bureau score.</p>
 
-        <div class="glass card mt-2">
-            <h3>💡 Improvement Tips</h3>
-            <ul style="color: #ddd; line-height: 1.8;">
-                <li>Keep credit utilization below 30% of your total limit.</li>
-                <li>Never miss an EMI or credit card bill payment.</li>
-                <li>Maintain a healthy mix of secured (Home/Auto) and unsecured (Personal/Card) loans.</li>
-                <li>Avoid applying for multiple loans in a short span.</li>
-            </ul>
+        <div id="loading" style="text-align:center; padding:3rem; color:#aaa;">Loading your credit health...</div>
+
+        <div id="content" style="display:none;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-top:1.5rem;">
+
+                <!-- Score ring -->
+                <div class="glass card" style="text-align:center; padding:2rem;">
+                    <h3>Estimated Credit Health Score</h3>
+                    <div class="score-ring-wrap">
+                        <div class="score-ring" id="scoreRing">
+                            <div class="score-num" id="scoreNum">—</div>
+                            <div class="score-range">300 – 850</div>
+                        </div>
+                    </div>
+                    <div id="scoreBand" style="font-weight:600; font-size:1rem; margin-bottom:0.5rem;"></div>
+                    <div id="scoreNote" style="color:#aaa; font-size:0.8rem; max-width:260px; margin:0 auto;"></div>
+                </div>
+
+                <!-- Factor breakdown -->
+                <div class="glass card" style="padding:1.5rem;">
+                    <h3>Score Factors</h3>
+                    <div id="factors"></div>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="glass card" style="margin-top:1.5rem; padding:1.5rem;">
+                <h3>💡 How to Improve</h3>
+                <div id="tips" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:0.75rem; margin-top:1rem;"></div>
+            </div>
+
+            <p style="color:#555; font-size:0.75rem; margin-top:1rem; text-align:center;">
+                This score is derived from your uploaded transaction data and is for personal reference only.
+                It is not an official CIBIL / Experian / CRIF score.
+            </p>
         </div>
     </div>
 
     <script>
-        const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+        const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
         const token = localStorage.getItem('token');
-        if (!token) window.location.href = 'auth.html';
-
-        let baseScore = 650;
-        let currentScore = 650;
+        if (!token) window.location.href = '/login';
 
         async function init() {
             try {
-                const res = await fetch(API_BASE + '/api/credit-score', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                const data = await res.json();
-                baseScore = Number.isInteger(data.score) ? data.score : 650;
-                currentScore = baseScore;
-                renderScore(currentScore);
-            } catch (e) {
-                console.log(e);
+                const [scoreRes, dashRes] = await Promise.all([
+                    fetch(API_BASE + '/api/credit-score', { headers: { 'Authorization': 'Bearer ' + token } }),
+                    fetch(API_BASE + '/api/dashboard', { headers: { 'Authorization': 'Bearer ' + token } })
+                ]);
+                const scoreData = scoreRes.ok ? await scoreRes.json() : {};
+                const dashData  = dashRes.ok  ? await dashRes.json()  : {};
+
+                buildScore(scoreData, dashData);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display  = 'block';
+            } catch(e) {
+                document.getElementById('loading').innerHTML = '<span style="color:#e74c3c">Could not load data. Check your connection.</span>';
             }
         }
 
-        function updateScore(delta, checkbox) {
-            if (checkbox.checked) {
-                currentScore = Math.max(300, Math.min(850, currentScore + delta));
+        function buildScore(scoreData, dashData) {
+            const intel     = dashData.intelligence || {};
+            const counts    = dashData.counts || {};
+            const userStats = dashData.user_stats || {};
+
+            // --- Derive factors from real data ---
+            const totalTxns  = counts.total_transactions || 0;
+            const flagged    = intel.flagged_count || 0;
+            const fraudRisk  = intel.fraud_risk_level || 'Low';
+            const verified   = userStats.email_verified || false;
+            const avgSpend   = intel.avg_monthly_spend || 0;
+            const monthsData = intel.months_used || 0;
+
+            // Factor scores (0–100)
+            const fraudFactor  = flagged === 0 ? 100 : Math.max(0, 100 - flagged * 15);
+            const historyFactor = Math.min(100, monthsData * 14);    // 7+ months = full score
+            const activityFactor = Math.min(100, totalTxns * 2);     // 50+ txns = full score
+            const verifyFactor  = verified ? 100 : 30;
+            const riskFactor   = fraudRisk === 'Low' ? 100 : fraudRisk === 'Medium' ? 55 : 20;
+
+            // Weighted score → 300–850 range
+            const weights = [0.35, 0.25, 0.15, 0.15, 0.10];
+            const factors = [fraudFactor, riskFactor, historyFactor, activityFactor, verifyFactor];
+            const weighted = factors.reduce((acc, v, i) => acc + v * weights[i], 0);
+            const finalScore = Math.round(300 + (weighted / 100) * 550);
+
+            // Render score
+            document.getElementById('scoreNum').innerText = totalTxns === 0 ? 'N/A' : finalScore;
+            const ring = document.getElementById('scoreRing');
+            let color, band, note;
+            if (totalTxns === 0) {
+                color = '#555'; band = 'No Data'; note = 'Upload a bank statement to compute your credit health.';
+            } else if (finalScore >= 750) {
+                color = '#2ecc71'; band = '🟢 Excellent'; note = 'Very low risk. Strong payment consistency.';
+            } else if (finalScore >= 650) {
+                color = '#f1c40f'; band = '🟡 Good'; note = 'Moderate risk. A few improvements can push it higher.';
+            } else if (finalScore >= 550) {
+                color = '#f39c12'; band = '🟠 Fair'; note = 'Some risk signals detected. Review flagged transactions.';
             } else {
-                currentScore = Math.max(300, Math.min(850, currentScore - delta));
+                color = '#e74c3c'; band = '🔴 Poor'; note = 'High risk indicators. Reduce flagged transactions.';
             }
-            renderScore(currentScore);
-        }
+            ring.style.borderColor = color;
+            document.getElementById('scoreBand').innerText = band;
+            document.getElementById('scoreBand').style.color = color;
+            document.getElementById('scoreNote').innerText = note;
 
-        function renderScore(score) {
-            const el = document.getElementById('scoreVal');
-            const circle = document.getElementById('scoreCircle');
-            const text = document.getElementById('scoreText');
+            // Render factor bars
+            const factorDefs = [
+                { label: 'Fraud-free transactions', score: fraudFactor, weight: '35%', detail: `${flagged} flagged` },
+                { label: 'Account-level risk', score: riskFactor, weight: '25%', detail: fraudRisk + ' risk' },
+                { label: 'Transaction history', score: historyFactor, weight: '15%', detail: monthsData + ' months' },
+                { label: 'Activity level', score: activityFactor, weight: '15%', detail: totalTxns + ' transactions' },
+                { label: 'Account verified', score: verifyFactor, weight: '10%', detail: verified ? 'Verified ✓' : 'Not verified' },
+            ];
+            const factEl = document.getElementById('factors');
+            factEl.innerHTML = factorDefs.map(f => {
+                const barColor = f.score >= 75 ? '#2ecc71' : f.score >= 45 ? '#f1c40f' : '#e74c3c';
+                const grade = f.score >= 75 ? 'A' : f.score >= 50 ? 'B' : f.score >= 30 ? 'C' : 'D';
+                const gradeColor = f.score >= 75 ? '#2ecc71' : f.score >= 50 ? '#f1c40f' : '#e74c3c';
+                return `<div class="factor-row">
+                    <div class="factor-label">${f.label} <span style="color:#555; font-size:0.72rem;">(${f.weight})</span></div>
+                    <div class="factor-bar-bg"><div class="factor-bar" style="width:${f.score}%; background:${barColor};"></div></div>
+                    <div class="factor-val" style="color:${barColor};">${f.detail}</div>
+                    <div class="grade-badge" style="background:${gradeColor}20; color:${gradeColor}; border:1px solid ${gradeColor}40;">${grade}</div>
+                </div>`;
+            }).join('');
 
-            // Animate number
-            el.innerText = score;
+            // Tips
+            const tips = [];
+            if (flagged > 0) tips.push({ icon: '⚠️', text: 'Review and dispute flagged transactions to lower your risk score.' });
+            if (monthsData < 6) tips.push({ icon: '📅', text: 'Upload more months of bank statements for a more accurate score.' });
+            if (!verified) tips.push({ icon: '📧', text: 'Verify your email address to boost the account verification factor.' });
+            if (totalTxns < 30) tips.push({ icon: '💳', text: 'More transaction history improves the activity factor.' });
+            if (fraudRisk !== 'Low') tips.push({ icon: '🛡️', text: 'Your account has Medium/High fraud risk. Check recent alerts.' });
+            if (tips.length === 0) tips.push({ icon: '🎉', text: 'Great health! Keep maintaining consistent, fraud-free transactions.' });
 
-            // The value is a hypothetical scenario, not a bureau score.
-            text.innerText = 'Illustrative simulation';
-            if (score >= 750) {
-                circle.style.borderColor = '#2ecc71'; // Green
-                text.style.color = '#2ecc71';
-            } else if (score >= 650) {
-                circle.style.borderColor = '#f1c40f'; // Yellow
-                text.style.color = '#f1c40f';
-            } else {
-                circle.style.borderColor = '#e74c3c'; // Red
-                text.style.color = '#e74c3c';
-            }
-        }
-
-        async function saveScore() {
-            const response = await fetch(API_BASE + '/api/credit-score', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ score: currentScore })
-            });
-            if (response.ok) alert('Simulation saved. This is not an official credit score.');
-            else alert('Could not save the simulation. Please try again.');
+            document.getElementById('tips').innerHTML = tips.map(t =>
+                `<div style="background:rgba(0,0,0,0.2); padding:0.85rem; border-radius:8px; font-size:0.82rem; color:#ccc;">
+                    <span style="font-size:1.1rem;">${t.icon}</span> ${t.text}
+                </div>`
+            ).join('');
         }
 
         init();

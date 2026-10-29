@@ -10,6 +10,7 @@ venv/
 # dotenv
 .env
 assets/rag_documents/
+assets/private_kyc_documents/
 
 # Byte-compiled / optimized / DLL files
 *.pyc
@@ -27,3 +28,6 @@ dist/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Downloaded benchmark data and evaluation indexes (re-create with scripts/download_datasets.py)
+datasets/

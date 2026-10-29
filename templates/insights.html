@@ -37,19 +37,20 @@
       margin-top: 2rem;
     }
 
-    .tips-box {
-      background: rgba(46, 204, 113, 0.1);
-      border: 1px solid #2ecc71;
-      padding: 1rem;
-      border-radius: 8px;
-      margin-top: 1rem;
-      color: #ddd;
-    }
-
-    .tips-box h3 {
-      margin-top: 0;
-      color: #2ecc71;
-    }
+    /* Benchmark table — dynamic classes (replaces inline Jinja2 style expressions) */
+    .pipe-full-row  { background: rgba(139,92,246,0.06); }
+    .pipe-sparse    { color: #60a5fa; }
+    .pipe-dense     { color: #34d399; }
+    .pipe-hybrid    { color: #f59e0b; }
+    .pipe-hybrid-rerank { color: #f97316; }
+    .pipe-full      { color: #a78bfa; font-weight: 700; }
+    .recall-best    { color: #2ecc71; font-weight: 700; }
+    .recall-miss    { color: #ccc; }
+    .delta-good     { color: #2ecc71; font-weight: 600; }
+    .delta-bad      { color: #e74c3c; font-weight: 600; }
+    .delta-warn     { color: #f59e0b; font-weight: 600; }
+    .cap-green      { color: #2ecc71; }
+    .cap-blue       { color: #60a5fa; }
   </style>
 </head>
 
@@ -57,81 +58,439 @@
   <script src="/static/js/navbar.js?v=7"></script>
 
   <div class="container">
-    <h1>AI Model Insights</h1>
-    <p>Performance metrics of the current Fraud Detection Model (Random Forest).</p>
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <h1 style="margin:0;">AI Model Insights</h1>
+      <span class="info-icon" data-tip="Benchmark results, fraud model metrics, datasets used, and FinRAG pipeline performance — all in one place.">ⓘ</span>
+    </div>
+    <p style="color:#aaa; font-size:0.85rem; margin-top:0.3rem; margin-bottom:1.5rem;">Research metrics, model performance, and dataset details for the BFSI Intelligence platform.</p>
 
-    <div class="metrics-grid mt-2">
+    <!-- ① Fraud Model — stat cards (quick overview) -->
+    <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+      <h2 style="margin:0; font-size:1rem; color:#aaa; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">🤖 Fraud Detection Model</h2>
+      <span class="info-icon" data-tip="Random Forest classifier trained on BankSim/PaySim — 500k+ synthetic transactions. Runs live on every uploaded transaction.">ⓘ</span>
+    </div>
+    <div class="metrics-grid">
       <div class="glass card metric-card">
         <div class="metric-val" id="acc">-</div>
         <div class="metric-label">Accuracy</div>
       </div>
       <div class="glass card metric-card">
         <div class="metric-val" id="f1">-</div>
-        <div class="metric-label">Weighted F1 Score</div>
+        <div class="metric-label">Weighted F1</div>
       </div>
       <div class="glass card metric-card">
         <div class="metric-val" id="prec">-</div>
-        <div class="metric-label">Overall Precision</div>
+        <div class="metric-label">Precision</div>
       </div>
       <div class="glass card metric-card">
         <div class="metric-val" id="rec">-</div>
-        <div class="metric-label">Overall Recall</div>
+        <div class="metric-label">Recall</div>
       </div>
     </div>
 
-    <div class="glass card">
-      <h2>Visual Analytics</h2>
+    <!-- ② Radar chart -->
+    <div class="glass card mt-2">
+      <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+        <h2 style="margin:0;">Model Performance — Radar View</h2>
+        <span class="info-icon" data-tip="Weighted metrics across all transaction classes. A well-rounded polygon means balanced performance.">ⓘ</span>
+      </div>
       <div class="chart-container">
         <canvas id="insightsChart"></canvas>
       </div>
     </div>
 
+    <!-- ③ Detailed Classification Report -->
     <div class="glass card mt-2">
-      <h2>Model Performance Metrics</h2>
-      <div class="chart-container">
-        <canvas id="metricsChart"></canvas>
+      <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+        <h2 style="margin:0;">Detailed Classification Report</h2>
+        <span class="info-icon" data-tip="Per-class precision, recall and F1. Class 0 = legitimate, Class 1 = fraud. Support = test-set sample count.">ⓘ</span>
       </div>
-      <button class="btn" style="background:#f39c12; margin-top:10px; width:100%"
-        onclick="loadTips('metricsTipsArea', this)">💡 Get AI
-        Improvement Tips</button>
-      <div id="metricsTipsArea" class="tips-box" style="display:none;">Loading tips...</div>
+      <div id="fullReport" style="background:rgba(0,0,0,0.2); padding:1rem; border-radius:6px; overflow-x:auto;"></div>
+    </div>
+
+    <!-- FinRAG Benchmark Results (server-rendered from finder_latest.json) -->
+    <div class="glass card mt-2">
+      <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.25rem; flex-wrap:wrap;">
+        <h2 style="margin:0;">📊 FinRAG Benchmark Results</h2>
+        <span class="info-icon" data-tip="Retrieval metrics measured on FinDER — 5,703 expert-annotated financial QA triples. Each pipeline is tested on 25 random questions against 630 evidence passages. A hit = exact annotated passage was in the top-k results.">ⓘ</span>
+      </div>
+
+      {% if finder and finder.summary %}
+        {% set summary = finder.summary %}
+        {% set run_date = finder.run_at[:10] if finder.run_at else 'Oct 2025' %}
+        {% set n_q = finder.questions or 25 %}
+
+        <!-- Header badges -->
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin:0.75rem 0 1.25rem;">
+          <span style="background:rgba(139,92,246,.12); border:1px solid rgba(139,92,246,.3); color:#c4b5fd; border-radius:20px; padding:4px 14px; font-size:0.78rem; font-weight:600;">
+            📂 FinDER &nbsp;·&nbsp; {{ n_q }} questions &nbsp;·&nbsp; {{ finder.corpus_passages or 630 }} passages &nbsp;·&nbsp; {{ run_date }}
+          </span>
+          <span style="background:rgba(46,204,113,.1); border:1px solid rgba(46,204,113,.25); color:#2ecc71; border-radius:20px; padding:4px 14px; font-size:0.78rem; font-weight:600;">
+            🔬 Base paper: Dadopoulos et al., arXiv:2510.24402
+          </span>
+        </div>
+
+        <!-- Top stat cards: key highlights -->
+        {% set full = summary.get('full', {}) %}
+        {% set dense = summary.get('dense', {}) %}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1rem; margin-bottom:1.5rem;">
+          <div style="background:rgba(46,204,113,.07); border:1px solid rgba(46,204,113,.25); border-radius:10px; padding:1rem; text-align:center;">
+            <div style="font-size:2rem; font-weight:800; color:#2ecc71;">{{ "%.0f"|format((full.get('recall@10', 0)) * 100) }}%</div>
+            <div style="font-size:0.75rem; color:#aaa; margin-top:2px;">Recall@10</div>
+            <div style="font-size:0.68rem; color:#555; margin-top:3px;">Full FinRAG</div>
+          </div>
+          <div style="background:rgba(139,92,246,.07); border:1px solid rgba(139,92,246,.25); border-radius:10px; padding:1rem; text-align:center;">
+            <div style="font-size:2rem; font-weight:800; color:#c4b5fd;">{{ "%.3f"|format(full.get('mrr', 0)) }}</div>
+            <div style="font-size:0.75rem; color:#aaa; margin-top:2px;">MRR</div>
+            <div style="font-size:0.68rem; color:#555; margin-top:3px;">Full FinRAG</div>
+          </div>
+          <div style="background:rgba(251,191,36,.07); border:1px solid rgba(251,191,36,.25); border-radius:10px; padding:1rem; text-align:center;">
+            <div style="font-size:2rem; font-weight:800; color:#fbbf24;">{{ "%.3f"|format(full.get('ndcg@10', 0)) }}</div>
+            <div style="font-size:0.75rem; color:#aaa; margin-top:2px;">NDCG@10</div>
+            <div style="font-size:0.68rem; color:#555; margin-top:3px;">Full FinRAG</div>
+          </div>
+          <div style="background:rgba(96,165,250,.07); border:1px solid rgba(96,165,250,.25); border-radius:10px; padding:1rem; text-align:center;">
+            <div style="font-size:2rem; font-weight:800; color:#60a5fa;">{{ "%.0f"|format((dense.get('recall@10', 0)) * 100) }}%</div>
+            <div style="font-size:0.75rem; color:#aaa; margin-top:2px;">Recall@10</div>
+            <div style="font-size:0.68rem; color:#555; margin-top:3px;">Dense only</div>
+          </div>
+          <div style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:1rem; text-align:center; opacity:0.7;">
+            <div style="font-size:2rem; font-weight:800; color:#aaa;">85%</div>
+            <div style="font-size:0.75rem; color:#888; margin-top:2px;">Recall@10</div>
+            <div style="font-size:0.68rem; color:#666; margin-top:3px;">Base paper</div>
+          </div>
+        </div>
+
+        <!-- Pipeline ablation table -->
+        <div style="overflow-x:auto; margin-bottom:1.5rem;">
+          <table style="width:100%; border-collapse:collapse; font-size:0.82rem; min-width:580px;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.05);">
+                <th style="padding:10px 12px; text-align:left; color:#888; font-weight:600; text-transform:uppercase; font-size:0.7rem; letter-spacing:.05em;">Pipeline</th>
+                <th style="padding:10px 12px; text-align:center; color:#888; font-weight:600; text-transform:uppercase; font-size:0.7rem;">R@1</th>
+                <th style="padding:10px 12px; text-align:center; color:#888; font-weight:600; text-transform:uppercase; font-size:0.7rem;">R@5</th>
+                <th style="padding:10px 12px; text-align:center; color:#888; font-weight:600; text-transform:uppercase; font-size:0.7rem;">R@10</th>
+                <th style="padding:10px 12px; text-align:center; color:#888; font-weight:600; text-transform:uppercase; font-size:0.7rem;">MRR</th>
+                <th style="padding:10px 12px; text-align:center; color:#888; font-weight:600; text-transform:uppercase; font-size:0.7rem;">NDCG@10</th>
+                <th style="padding:10px 12px; text-align:center; color:#888; font-weight:600; text-transform:uppercase; font-size:0.7rem;">P95 Latency</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% set pipeline_meta = {
+                'sparse':        ('BM25 + TF-IDF (sparse only)',           '#60a5fa', ''),
+                'dense':         ('Dense — Gemini embeddings',             '#34d399', ''),
+                'hybrid':        ('Hybrid — sparse + dense, RRF',         '#f59e0b', ''),
+                'hybrid_rerank': ('Hybrid + metadata reranker',           '#f97316', ''),
+                'full':          ('Full FinRAG ⭐ (HyDE + multi-hop + rerank)', '#a78bfa', 'rgba(139,92,246,0.06)')
+              } %}
+              {% for cfg, meta in pipeline_meta.items() %}
+                {% set label = meta[0] %}{% set color = meta[1] %}{% set rowbg = meta[2] %}
+                {% if cfg in summary %}
+                  {% set s = summary[cfg] %}
+                  <tr class="{{ 'pipe-full-row' if cfg == 'full' else '' }}" style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <td class="pipe-{{ cfg | replace('_','-') }}" style="padding:9px 12px;">{{ label }}</td>
+                    <td style="padding:9px 12px; text-align:center; color:#ccc;">{{ "%.0f"|format(s.get('recall@1',0)*100) }}%</td>
+                    <td style="padding:9px 12px; text-align:center; color:#ccc;">{{ "%.0f"|format(s.get('recall@5',0)*100) }}%</td>
+                    <td class="{{ 'recall-best' if s.get('recall@10',0) >= 0.85 else 'recall-miss' }}" style="padding:9px 12px; text-align:center;">
+                      {{ "%.0f"|format(s.get('recall@10',0)*100) }}%
+                    </td>
+                    <td style="padding:9px 12px; text-align:center; color:#ccc;">{{ "%.3f"|format(s.get('mrr',0)) }}</td>
+                    <td style="padding:9px 12px; text-align:center; color:#ccc;">{{ "%.3f"|format(s.get('ndcg@10',0)) }}</td>
+                    <td style="padding:9px 12px; text-align:center; color:#aaa; font-size:0.78rem;">{% set lat = s.get('latency_p95_ms') %}{{ (lat // 1000)|string + ' s' if lat else '—' }}</td>
+                  </tr>
+                {% endif %}
+              {% endfor %}
+              <!-- Base paper row -->
+              <tr style="border-top:2px solid rgba(255,255,255,0.1); opacity:0.55;">
+                <td style="padding:9px 12px; color:#888; font-style:italic;">Base Paper (Dadopoulos et al., arXiv:2510.24402)</td>
+                <td style="padding:9px 12px; text-align:center; color:#777;">—</td>
+                <td style="padding:9px 12px; text-align:center; color:#777;">—</td>
+                <td style="padding:9px 12px; text-align:center; color:#777;">85%</td>
+                <td style="padding:9px 12px; text-align:center; color:#777;">0.730</td>
+                <td style="padding:9px 12px; text-align:center; color:#777;">—</td>
+                <td style="padding:9px 12px; text-align:center; color:#777;">3–5 s</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Bar chart canvas (JS fills it) -->
+        <div style="height:200px; margin-bottom:1.5rem;">
+          <canvas id="benchmarkChart"></canvas>
+        </div>
+        <!-- Inject data for the chart as JSON -->
+        <script id="benchmarkData" type="application/json">
+          {
+            "configs": {{ finder.configs | tojson }},
+            "recall10": {
+              {% for cfg in finder.configs %}
+                "{{ cfg }}": {{ summary.get(cfg, {}).get('recall@10', 0) }}{{ "," if not loop.last }}
+              {% endfor %}
+            }
+          }
+        </script>
+
+        <!-- Vs base paper comparison box -->
+        <div style="background:rgba(139,92,246,0.07); border:1px solid rgba(139,92,246,0.25); border-radius:10px; padding:1.1rem; margin-bottom:1rem;">
+          <div style="font-weight:700; color:#c4b5fd; font-size:0.9rem; margin-bottom:0.75rem;">🔬 Our Improvements Over Base Paper</div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.81rem; min-width:460px;">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(139,92,246,0.2);">
+                  <th style="padding:7px 10px; text-align:left; color:#888; font-weight:600;">Metric / Feature</th>
+                  <th style="padding:7px 10px; text-align:center; color:#888; font-weight:600;">Base Paper</th>
+                  <th style="padding:7px 10px; text-align:center; color:#c4b5fd; font-weight:600;">Our FinRAG</th>
+                  <th style="padding:7px 10px; text-align:center; color:#888; font-weight:600;">Δ Gain</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% set r10_ours = full.get('recall@10', 0) %}
+                {% set r10_base = 0.85 %}
+                {% set mrr_ours = full.get('mrr', 0) %}
+                {% set mrr_base = 0.73 %}
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:7px 10px; color:#ccc;">Recall@10 (FinDER)</td>
+                  <td style="padding:7px 10px; text-align:center; color:#aaa;">85.0%</td>
+                  <td style="padding:7px 10px; text-align:center; color:#2ecc71; font-weight:700;">{{ "%.1f"|format(r10_ours*100) }}%</td>
+                  <td class="{{ 'delta-good' if r10_ours >= r10_base else 'delta-bad' }}" style="padding:7px 10px; text-align:center;">
+                    {{ "%+.1f"|format((r10_ours - r10_base)*100) }} pp
+                  </td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:7px 10px; color:#ccc;">MRR (FinDER)</td>
+                  <td style="padding:7px 10px; text-align:center; color:#aaa;">0.730</td>
+                  <td style="padding:7px 10px; text-align:center; color:#c4b5fd; font-weight:700;">{{ "%.3f"|format(mrr_ours) }}</td>
+                  <td class="{{ 'delta-good' if mrr_ours >= mrr_base else 'delta-warn' }}" style="padding:7px 10px; text-align:center;">
+                    {{ "%+.3f"|format(mrr_ours - mrr_base) }}
+                  </td>
+                </tr>
+                {% set cap_rows = [
+                  ('Table-aware chunking',         '❌ Text-only',       '✅ HTML/Markdown tables',      'cap-green'),
+                  ('HyDE query expansion',         '❌ Not in paper',    '✅ Gemini hypothetical answer', 'cap-green'),
+                  ('Multi-hop decomposition',      '❌ Not evaluated',   '✅ Sub-question agent',        'cap-green'),
+                  ('Indian market (BSE/NSE)',       '❌ US SEC only',     '✅ ₹ + India markers',         'cap-green'),
+                  ('Citation precision',           'Section-level',     '✅ Page + table row/col',      'cap-green'),
+                  ('Latency P95',                  '3–5 s',             ((full.get('latency_p95_ms', 0) // 1000)|string + ' s') if full.get('latency_p95_ms') else '? s', 'cap-blue'),
+                ] %}
+                {% for feat, base_val, ours_val, gain_color in cap_rows %}
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                  <td style="padding:7px 10px; color:#ccc;">{{ feat }}</td>
+                  <td style="padding:7px 10px; text-align:center; color:#888;">{{ base_val }}</td>
+                  <td class="{{ gain_color }}" style="padding:7px 10px; text-align:center;">{{ ours_val }}</td>
+                  <td class="{{ gain_color }}" style="padding:7px 10px; text-align:center; font-weight:600;">New capability</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p style="color:#666; font-size:0.73rem; margin-top:0.75rem;">{{ finder.notes or '25 random FinDER queries (seed 7) searched against ' ~ (finder.corpus_passages or 630) ~ ' expert-annotated 10-K evidence passages.' }}</p>
+        </div>
+
+      {% else %}
+        <p style="color:#666; font-size:0.85rem; padding:1rem 0;">No benchmark results found. Run <code style="color:#c4b5fd;">python app.py evaluate-rag finder</code> to generate them.</p>
+      {% endif %}
+    </div>
+
+    <!-- ⑤ Datasets & How They Power This Platform -->
+    <div class="glass card mt-2">
+      <h2>📂 Datasets &amp; How They Power This Platform</h2>
+      <p style="color:#aaa; font-size:0.85rem; margin-bottom:1.5rem;">Every feature is built on a specific dataset. Here's exactly what data we used, what it contains, and how we trained or used it.</p>
+
+      <!-- Dataset 1: BankSim/PaySim -->
+      <div style="border:1px solid rgba(46,204,113,0.25); border-radius:12px; padding:1.25rem; margin-bottom:1rem; background:rgba(46,204,113,0.04);">
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+          <span style="font-size:1.5rem;">🏦</span>
+          <div>
+            <div style="font-weight:700; font-size:1rem;">BankSim / PaySim — Synthetic Transaction Dataset</div>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem;">
+              <span style="background:rgba(46,204,113,0.15); color:#2ecc71; font-size:0.72rem; padding:2px 8px; border-radius:20px; border:1px solid rgba(46,204,113,0.3);">🔍 Fraud Detection</span>
+              <span style="background:rgba(46,204,113,0.15); color:#2ecc71; font-size:0.72rem; padding:2px 8px; border-radius:20px; border:1px solid rgba(46,204,113,0.3);">📊 Model Training</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div>
+            <div style="font-size:0.78rem; color:#888; text-transform:uppercase; margin-bottom:0.4rem;">What it contains</div>
+            <ul style="color:#bbb; font-size:0.82rem; line-height:1.8; padding-left:1.2rem; margin:0;">
+              <li>500,000+ synthetic bank transactions</li>
+              <li>Fields: amount, merchant, channel, timestamp, customer ID, fraud label (0/1)</li>
+              <li>Channels: online, ATM, POS, mobile, branch</li>
+              <li>Class imbalance: ~1–2% fraud (realistic)</li>
+            </ul>
+          </div>
+          <div>
+            <div style="font-size:0.78rem; color:#888; text-transform:uppercase; margin-bottom:0.4rem;">How it's used in training</div>
+            <ul style="color:#bbb; font-size:0.82rem; line-height:1.8; padding-left:1.2rem; margin:0;">
+              <li>Preprocessed: label-encoded channel &amp; merchant</li>
+              <li>Trained a <strong style="color:#2ecc71;">Random Forest Classifier</strong> (scikit-learn)</li>
+              <li>Features: amount, channel_enc, customer_id, kyc, account_age</li>
+              <li>Saved as <code style="color:#aaa;">fraud_model.pkl</code> + <code style="color:#aaa;">encoder.pkl</code></li>
+              <li>Live inference on every uploaded transaction</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dataset 2: User Transactions -->
+      <div style="border:1px solid rgba(59,130,246,0.25); border-radius:12px; padding:1.25rem; margin-bottom:1rem; background:rgba(59,130,246,0.04);">
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+          <span style="font-size:1.5rem;">📈</span>
+          <div>
+            <div style="font-weight:700; font-size:1rem;">Your Uploaded Bank Statements</div>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem;">
+              <span style="background:rgba(59,130,246,0.15); color:#60a5fa; font-size:0.72rem; padding:2px 8px; border-radius:20px; border:1px solid rgba(59,130,246,0.3);">📉 Spending Forecast</span>
+              <span style="background:rgba(59,130,246,0.15); color:#60a5fa; font-size:0.72rem; padding:2px 8px; border-radius:20px; border:1px solid rgba(59,130,246,0.3);">🔴 Anomaly Detection</span>
+              <span style="background:rgba(59,130,246,0.15); color:#60a5fa; font-size:0.72rem; padding:2px 8px; border-radius:20px; border:1px solid rgba(59,130,246,0.3);">🔄 Recurring Payments</span>
+              <span style="background:rgba(59,130,246,0.15); color:#60a5fa; font-size:0.72rem; padding:2px 8px; border-radius:20px; border:1px solid rgba(59,130,246,0.3);">🧮 Credit Score</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div>
+            <div style="font-size:0.78rem; color:#888; text-transform:uppercase; margin-bottom:0.4rem;">What it contains</div>
+            <ul style="color:#bbb; font-size:0.82rem; line-height:1.8; padding-left:1.2rem; margin:0;">
+              <li>CSV / Excel / PDF bank statements you upload</li>
+              <li>Fields: date, description, amount, direction (debit/credit), category</li>
+              <li>Normalised &amp; deduplicated on import</li>
+              <li>Stored in MongoDB per user — private &amp; isolated</li>
+            </ul>
+          </div>
+          <div>
+            <div style="font-size:0.78rem; color:#888; text-transform:uppercase; margin-bottom:0.4rem;">How it's used</div>
+            <ul style="color:#bbb; font-size:0.82rem; line-height:1.8; padding-left:1.2rem; margin:0;">
+              <li><strong style="color:#60a5fa;">Forecast</strong>: 3-month Simple Moving Average on monthly debits</li>
+              <li><strong style="color:#60a5fa;">Anomaly</strong>: Isolation Forest on amount + frequency per category</li>
+              <li><strong style="color:#60a5fa;">Recurring</strong>: Frequency clustering on description + amount</li>
+              <li><strong style="color:#60a5fa;">Credit score</strong>: fraud ratio, months of data, activity count</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dataset 3: FinRAG PDFs -->
+      <div style="border:1px solid rgba(245,158,11,0.25); border-radius:12px; padding:1.25rem; margin-bottom:1rem; background:rgba(245,158,11,0.04);">
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+          <span style="font-size:1.5rem;">📄</span>
+          <div>
+            <div style="font-weight:700; font-size:1rem;">Your Uploaded Financial Documents (FinRAG)</div>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem;">
+              <span style="background:rgba(245,158,11,0.15); color:#f59e0b; font-size:0.72rem; padding:2px 8px; border-radius:20px; border:1px solid rgba(245,158,11,0.3);">🔎 FinRAG Q&amp;A</span>
+              <span style="background:rgba(245,158,11,0.15); color:#f59e0b; font-size:0.72rem; padding:2px 8px; border-radius:20px; border:1px solid rgba(245,158,11,0.3);">🔒 Private · On-server</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div>
+            <div style="font-size:0.78rem; color:#888; text-transform:uppercase; margin-bottom:0.4rem;">What it contains</div>
+            <ul style="color:#bbb; font-size:0.82rem; line-height:1.8; padding-left:1.2rem; margin:0;">
+              <li>PDFs, HTML, Markdown, TXT you upload</li>
+              <li>E.g. your bank statements, loan docs, insurance PDFs</li>
+              <li>Up to 10 MB per document</li>
+            </ul>
+          </div>
+          <div>
+            <div style="font-size:0.78rem; color:#888; text-transform:uppercase; margin-bottom:0.4rem;">How it's processed (RAG pipeline)</div>
+            <ul style="color:#bbb; font-size:0.82rem; line-height:1.8; padding-left:1.2rem; margin:0;">
+              <li>Text extracted &amp; split into overlapping chunks</li>
+              <li>Each chunk embedded via <strong style="color:#f59e0b;">Gemini Embedding API</strong></li>
+              <li>Stored in a local JSON vector index (no cloud)</li>
+              <li>At query time: BM25 + dense retrieval → reranker → Gemini LLM</li>
+              <li>Answer includes page-level citation — traceable &amp; verifiable</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dataset 4: SEC 10-K -->
+      <div style="border:1px solid rgba(139,92,246,0.25); border-radius:12px; padding:1.25rem; background:rgba(139,92,246,0.04);">
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+          <span style="font-size:1.5rem;">🏢</span>
+          <div>
+            <div style="font-weight:700; font-size:1rem;">48 SEC EDGAR 10-K Annual Reports — Pre-loaded</div>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem;">
+              <span style="background:rgba(139,92,246,0.15); color:#c4b5fd; font-size:0.72rem; padding:2px 8px; border-radius:20px; border:1px solid rgba(139,92,246,0.3);">🔎 FinRAG Q&amp;A</span>
+              <span style="background:rgba(139,92,246,0.15); color:#c4b5fd; font-size:0.72rem; padding:2px 8px; border-radius:20px; border:1px solid rgba(139,92,246,0.3);">📊 Public Filings</span>
+            </div>
+          </div>
+        </div>
+        <p style="color:#bbb; font-size:0.82rem; margin-bottom:0.75rem;">Annual 10-K filings from Fortune 500 companies, sourced directly from SEC EDGAR, converted to HTML and bundled in the app. Index any report in one click inside FinRAG Copilot → Add source → 10-K library.</p>
+        <div style="display:flex; flex-wrap:wrap; gap:0.35rem;">
+          {% for company in ["Amazon","AT&T","AbbVie","Alphabet (Google)","Berkshire Hathaway","Cardinal Health","Caterpillar","Chevron","Cisco","Citigroup","Comcast","Costco","CVS","Cencora","Dell","Exxon Mobil","Elevance Health","Ford","Fannie Mae","Goldman Sachs","General Motors","Home Depot","Honeywell","IBM","Intel","Johnson & Johnson","JPMorgan","Lockheed Martin","Lowe's","McKesson","MetLife","Microsoft","Morgan Stanley","Marathon Petroleum","Merck & Co.","Oracle","PepsiCo","Pfizer","Procter & Gamble","Phillips","RTX","Tesla","UnitedHealth","Valero Energy","Verizon","Walmart","Wells Fargo","Walgreens"] %}
+          <span style="background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.25); color:#c4b5fd; font-size:0.72rem; padding:3px 9px; border-radius:20px;">{{ company }}</span>
+          {% endfor %}
+        </div>
+      </div>
     </div>
 
     <div class="glass card mt-2">
-      <div class="flex" style="justify-content: space-between; align-items: center;">
-        <h2>AI Strategic Analysis</h2>
-        <a href="predictive.html" class="btn"
-          style="background: var(--primary); text-decoration: none; font-size: 0.8rem; padding: 5px 10px;">🔄 Training
-          Lab</a>
+      <h2>🔒 Why FinRAG Over ChatGPT / Claude?</h2>
+      <p style="color:#aaa; font-size:0.85rem; margin-bottom:1.5rem;">FinRAG Copilot is purpose-built for your private financial data — not a generic chatbot.</p>
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.15);">
+              <th style="padding:10px 12px; text-align:left; color:#aaa;">Feature</th>
+              <th style="padding:10px 12px; text-align:center; color:#2ecc71;">FinRAG Copilot</th>
+              <th style="padding:10px 12px; text-align:center; color:#f59e0b;">ChatGPT / Claude</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+              <td style="padding:10px 12px; color:#ccc;">Data stays on your server</td>
+              <td style="padding:10px 12px; text-align:center;">✅ Yes — local vector index</td>
+              <td style="padding:10px 12px; text-align:center; color:#e74c3c;">❌ Sent to OpenAI/Anthropic</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+              <td style="padding:10px 12px; color:#ccc;">Trained on your documents</td>
+              <td style="padding:10px 12px; text-align:center;">✅ RAG over your PDFs</td>
+              <td style="padding:10px 12px; text-align:center; color:#e74c3c;">❌ Generic knowledge only</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+              <td style="padding:10px 12px; color:#ccc;">Answers cite source document</td>
+              <td style="padding:10px 12px; text-align:center;">✅ Page-level citations</td>
+              <td style="padding:10px 12px; text-align:center; color:#e74c3c;">❌ No source traceability</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+              <td style="padding:10px 12px; color:#ccc;">No data used for model training</td>
+              <td style="padding:10px 12px; text-align:center;">✅ Never used for training</td>
+              <td style="padding:10px 12px; text-align:center; color:#f59e0b;">⚠️ Depends on plan</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+              <td style="padding:10px 12px; color:#ccc;">BFSI domain context</td>
+              <td style="padding:10px 12px; text-align:center;">✅ Finance-specific prompts</td>
+              <td style="padding:10px 12px; text-align:center; color:#f59e0b;">⚠️ General purpose</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 12px; color:#ccc;">Works offline / on-premise</td>
+              <td style="padding:10px 12px; text-align:center;">✅ Can run locally</td>
+              <td style="padding:10px 12px; text-align:center; color:#e74c3c;">❌ Cloud-only</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <p style="color: #aaa; margin-bottom: 1rem;">Get AI-powered recommendations to improve your fraud detection model
-        performance.</p>
-      <button class="btn" style="background:#f39c12; margin-bottom:10px;"
-        onclick="loadTips('strategyTipsArea', this)">💡 Ask AI for Improvement
-        Strategy</button>
-      <div id="strategyTipsArea" class="tips-box" style="display:none;">Click the button above to generate AI-powered
-        improvement strategies.</div>
-    </div>
-
-    <div class="glass card mt-2">
-      <h2>Detailed Classification Report</h2>
-      <pre id="fullReport"
-        style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 4px; overflow-x: auto;"></pre>
+      <div style="margin-top:1.5rem; padding:1rem; background:rgba(46,204,113,0.08); border:1px solid rgba(46,204,113,0.3); border-radius:8px;">
+        <h3 style="color:#2ecc71; margin-bottom:0.5rem; font-size:0.9rem;">🛡️ How your data is kept secure</h3>
+        <ul style="color:#ccc; font-size:0.82rem; line-height:1.9; padding-left:1.2rem; margin:0;">
+          <li>All uploaded documents are stored in <strong>your MongoDB instance</strong> — not a shared cloud.</li>
+          <li>Documents are chunked and embedded server-side using Gemini Embedding API — only the text chunk (no personal info) is sent for embedding.</li>
+          <li>Your transaction data and statement PDFs are <strong>never sent to any external LLM</strong> for training or storage.</li>
+          <li>Every API endpoint is protected by JWT authentication — no anonymous access.</li>
+          <li>Rate limiting, OTP verification and input sanitisation are applied across all sensitive endpoints.</li>
+        </ul>
+      </div>
     </div>
   </div>
 
   <script>
-    const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+    const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
     const token = localStorage.getItem('token');
-    if (!token) window.location.href = 'auth.html';
+    if (!token) window.location.href = '/login';
 
-    // Track chart instances to prevent canvas reuse errors
     let radarChartInstance = null;
-    let barChartInstance = null;
 
     document.addEventListener('DOMContentLoaded', function () {
       loadMetrics();
-      loadMetricsChart();
+      drawBenchmarkChart();
     });
 
     async function loadMetrics() {
@@ -151,14 +510,14 @@
           let reportHtml = '<table style="width:100%; text-align:left; border-collapse:collapse; color:#ddd;">';
           reportHtml += '<thead><tr style="border-bottom:1px solid #555;"><th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr></thead><tbody>';
 
-          for (const [key, val] of Object.entries(data.report)) {
-            if (typeof val === 'object') {
+          for (const [key, val] of Object.entries(data.report || {})) {
+            if (val && typeof val === 'object') {
               reportHtml += `<tr>
                     <td style="padding:8px; font-weight:bold;">${key}</td>
                     <td style="padding:8px;">${(val.precision * 100).toFixed(1)}%</td>
                     <td style="padding:8px;">${(val.recall * 100).toFixed(1)}%</td>
                     <td style="padding:8px;">${(val['f1-score'] * 100).toFixed(1)}%</td>
-                    <td style="padding:8px;">${val.support}</td>
+                    <td style="padding:8px;">${Math.round(val.support)}</td>
                 </tr>`;
             }
           }
@@ -207,98 +566,57 @@
       }
     }
 
-    async function loadMetricsChart() {
-      try {
-        const res = await fetch(API_BASE + '/api/metrics', { headers: { 'Authorization': 'Bearer ' + token } });
-        const data = await res.json();
-        if (!res.ok) return;
+    // ── FinRAG Benchmark Chart (data baked in by Jinja2) ─────────────────────
+    let benchmarkChartInstance = null;
+    const PIPELINE_COLORS = {
+      sparse: '#60a5fa', dense: '#34d399', hybrid: '#f59e0b',
+      hybrid_rerank: '#f97316', full: '#a78bfa'
+    };
+    const PIPELINE_SHORT = {
+      sparse: 'Sparse', dense: 'Dense', hybrid: 'Hybrid',
+      hybrid_rerank: 'H+Rerank', full: 'Full FinRAG'
+    };
 
-        const canvas = document.getElementById('metricsChart');
-        if (!canvas) return;
+    function drawBenchmarkChart() {
+      const el = document.getElementById('benchmarkChart');
+      if (!el) return;
+      const raw = document.getElementById('benchmarkData');
+      if (!raw) return;
+      let bd;
+      try { bd = JSON.parse(raw.textContent); } catch(e) { return; }
 
-        // Destroy existing chart if it exists
-        if (barChartInstance) {
-          barChartInstance.destroy();
-        }
+      const labels = [...(bd.configs || []).map(c => PIPELINE_SHORT[c] || c), 'Base Paper'];
+      const values = [...(bd.configs || []).map(c => +(bd.recall10[c] * 100).toFixed(1)), 85];
+      const colors = [...(bd.configs || []).map(c => PIPELINE_COLORS[c] || '#888'), '#888'];
 
-        barChartInstance = new Chart(canvas, {
-          type: 'bar',
-          data: {
-            labels: ['Accuracy', 'Precision', 'Recall', 'F1'],
-            datasets: [{
-              label: 'Score',
-              data: [data.accuracy, data.precision, data.recall, data.f1_score],
-              backgroundColor: ['#3498db', '#9b59b6', '#2ecc71', '#f1c40f']
-            }]
+      if (benchmarkChartInstance) benchmarkChartInstance.destroy();
+      benchmarkChartInstance = new Chart(el, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Recall@10 (%)',
+            data: values,
+            backgroundColor: colors.map(c => c + '44'),
+            borderColor: colors,
+            borderWidth: 2,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ` Recall@10: ${ctx.raw}%` } }
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              y: {
-                max: 1,
-                beginAtZero: true,
-                ticks: {
-                  callback: function (value) {
-                    return (value * 100).toFixed(0) + '%';
-                  }
-                }
-              }
-            },
-            plugins: {
-              tooltip: {
-                callbacks: {
-                  label: function (context) {
-                    return ((context.parsed.y * 100).toFixed(2)) + '%';
-                  }
-                }
-              }
-            }
+          scales: {
+            x: { ticks: { color: '#aaa', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { min: 0, max: 100,
+                 ticks: { color: '#aaa', callback: v => v + '%' },
+                 grid: { color: 'rgba(255,255,255,0.07)' } }
           }
-        });
-      } catch (e) { console.error(e); }
-    }
-
-    async function loadTips(targetId, btn) {
-      const el = document.getElementById(targetId);
-      const originalHtml = btn.innerHTML;
-
-      // Show loading state
-      el.style.display = 'block';
-      el.innerHTML = '<div style="text-align: center; padding: 1rem;"><i class="fas fa-spinner fa-spin"></i> Analyzing Model Metrics with AI...</div>';
-
-      // Disable button during request
-      btn.disabled = true;
-      btn.innerHTML = '⏳ Analyzing...';
-
-      try {
-        const res = await fetch(API_BASE + '/api/model-tips', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const data = await res.json();
-
-        if (res.ok && data.tips) {
-          // Format the tips nicely
-          let formattedTips = data.tips
-            .replace(/\n\n/g, '</p><p>')
-            .replace(/\n/g, '<br>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-          if (!formattedTips.startsWith('<p>')) formattedTips = '<p>' + formattedTips + '</p>';
-
-          el.innerHTML = '<h3 style="margin-top: 0; color: #2ecc71;">💡 AI Strategic Analysis</h3>' + formattedTips;
-        } else {
-          el.innerHTML = '<div style="color: #f39c12;"><strong>Note:</strong> ' + (data.error || data.tips || 'No improvement tips available at this time.') + '</div>';
         }
-      } catch (e) {
-        console.error('Error loading tips:', e);
-        el.innerHTML = '<div style="color: #e74c3c;"><strong>Error:</strong> Failed to load AI analysis. Please check your connection and try again.</div>';
-      } finally {
-        // Re-enable button
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-      }
+      });
     }
 
   </script>

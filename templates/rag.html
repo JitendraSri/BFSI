@@ -3,100 +3,200 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RAG Workspace - BFSI Intelligence</title>
+  <title>FinRAG Copilot - FinRAG AI</title>
   <link rel="stylesheet" href="/static/css/styles.css?v=7">
-  <link rel="stylesheet" href="/static/css/rag.css?v=1">
+  <link rel="stylesheet" href="/static/css/rag.css?v=4">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-  <script src="/static/js/navbar.js?v=8"></script>
-  <main class="container rag-page">
-    <header class="rag-heading">
-      <div>
-        <p class="rag-eyebrow">DOCUMENT INTELLIGENCE</p>
-        <h1>RAG Workspace</h1>
-        <p class="rag-subtitle">Search your financial documents and get answers grounded in their contents.</p>
+<body class="rag-body">
+  <script src="/static/js/navbar.js?v=9"></script>
+
+  <div class="rx-app" id="rx-app">
+    <!-- ============ SOURCES ============ -->
+    <aside class="rx-sources" id="rx-sources" aria-label="Document library">
+      <div class="rx-sources-head">
+        <div class="rx-brand">
+          <span class="rx-brand-mark"><i class="fas fa-layer-group" aria-hidden="true"></i></span>
+          <div>
+            <strong>Sources</strong>
+            <small id="rag-document-count">0 documents</small>
+          </div>
+        </div>
+        <button class="rx-icon-btn rx-only-mobile" type="button" id="rx-close-sources" aria-label="Close sources">
+          <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
       </div>
-      <span class="rag-status"><span></span> Private library</span>
-    </header>
 
-    <div class="rag-layout">
-      <aside class="glass rag-library">
-        <div class="rag-section-heading">
-          <div>
-            <p class="rag-eyebrow">YOUR SOURCES</p>
-            <h2>Document library</h2>
-          </div>
-          <i class="fas fa-folder-open" aria-hidden="true"></i>
-        </div>
+      <button class="rx-add-btn" type="button" id="rx-open-add">
+        <i class="fas fa-plus" aria-hidden="true"></i> Add source
+        <kbd>Upload · 10-K · SEC · URL</kbd>
+      </button>
 
-        <form id="rag-upload-form" class="rag-upload-form">
-          <label class="rag-file-label" for="rag-file">
-            <i class="fas fa-file-arrow-up" aria-hidden="true"></i>
-            <span id="rag-file-name">Choose a document</span>
-          </label>
-          <input id="rag-file" name="file" type="file" accept=".pdf,.html,.htm,.md,.txt" required>
-          <button class="rag-button rag-button-primary" type="submit" id="rag-index-button">
-            <i class="fas fa-layer-group" aria-hidden="true"></i> Index document
-          </button>
-          <p class="rag-form-note">PDF, HTML, Markdown, or text · 10 MB maximum</p>
-          <p class="rag-message" id="rag-upload-message" role="status"></p>
-        </form>
+      <label class="rx-search">
+        <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+        <input id="rx-filter" type="search" placeholder="Filter documents" autocomplete="off">
+      </label>
 
-        <div class="rag-catalog">
-          <label for="rag-catalog-select">FinRAG 10-K library</label>
-          <select id="rag-catalog-select">
-            <option value="">Loading available reports…</option>
-          </select>
-          <button class="rag-button rag-button-secondary" type="button" id="rag-catalog-button" disabled>
-            <i class="fas fa-book-open" aria-hidden="true"></i> Index report
-          </button>
-          <p class="rag-message" id="rag-catalog-message" role="status"></p>
-        </div>
+      <button class="rx-scope-all" type="button" id="rx-scope-all" hidden>
+        <span class="rx-doc-icon"><i class="fas fa-globe" aria-hidden="true"></i></span>
+        <span>
+          <strong>All documents</strong>
+          <small>Auto-selects the most relevant filings</small>
+        </span>
+      </button>
 
-        <div class="rag-library-heading">
-          <h3>Indexed documents</h3>
-          <span id="rag-document-count">0</span>
-        </div>
-        <div class="rag-document-list" id="rag-document-list" aria-live="polite">
-          <p class="rag-empty">Loading your library…</p>
-        </div>
-      </aside>
+      <div class="rx-doc-list" id="rag-document-list" aria-live="polite">
+        <div class="rx-skeleton"></div><div class="rx-skeleton"></div><div class="rx-skeleton"></div>
+      </div>
 
-      <section class="glass rag-query-panel">
-        <div class="rag-section-heading">
-          <div>
-            <p class="rag-eyebrow">ASK YOUR DOCUMENT</p>
-            <h2>Financial Q&amp;A</h2>
-          </div>
-          <i class="fas fa-magnifying-glass-chart" aria-hidden="true"></i>
-        </div>
-
-        <form id="rag-question-form" class="rag-question-form">
-          <label for="rag-document-select">Source document</label>
-          <select id="rag-document-select" required>
-            <option value="">Index a document to begin</option>
-          </select>
-          <label for="rag-question">Question</label>
-          <textarea id="rag-question" rows="4" maxlength="1000" placeholder="Ask about revenue, risk factors, cash flow…" required></textarea>
-          <div class="rag-submit-row">
-            <p>Answers are based on retrieved passages and include source references.</p>
-            <button class="rag-button rag-button-primary" id="rag-ask-button" type="submit" disabled>
-              Ask <i class="fas fa-arrow-right" aria-hidden="true"></i>
-            </button>
-          </div>
-        </form>
-
-        <div class="rag-answer" id="rag-answer" aria-live="polite">
-          <div class="rag-answer-empty">
-            <span class="rag-answer-icon"><i class="fas fa-quote-left" aria-hidden="true"></i></span>
-            <h3>Your answer will appear here</h3>
-            <p>Index a report, choose it as your source, and ask a question.</p>
-          </div>
-        </div>
+      <section class="rx-history" aria-label="Saved conversations">
+        <h3 class="rx-history-head"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Recent chats</h3>
+        <div class="rx-history-list" id="rx-history-list"></div>
       </section>
+
+      <p class="rx-toast" id="rag-upload-message" role="status"></p>
+    </aside>
+
+    <!-- ============ CHAT ============ -->
+    <section class="rx-chat" aria-label="FinRAG chat">
+      <header class="rx-chat-head">
+        <button class="rx-icon-btn rx-only-mobile" type="button" id="rx-open-nav" aria-label="Open navigation">
+          <i class="fas fa-bars" aria-hidden="true"></i>
+        </button>
+        <button class="rx-icon-btn rx-only-mobile" type="button" id="rx-open-sources" aria-label="Open sources">
+          <i class="fas fa-folder-open" aria-hidden="true"></i>
+        </button>
+        <div class="rx-title">
+          <h1>FinRAG <span>Copilot</span></h1>
+          <p id="rx-scope-label"><span class="rx-dot"></span>General chat with Gemini</p>
+        </div>
+        <div class="rx-head-actions">
+          <label class="rx-select" title="Select a document first to enable the retrieval pipeline. Full FinRAG = BM25 + TF-IDF + Gemini dense embeddings + metadata reranker. Sparse = keyword only (no API needed).">
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <select id="rag-pipeline" aria-label="Retrieval pipeline">
+              <option value="full">Full FinRAG</option>
+              <option value="hybrid_rerank">Hybrid + rerank</option>
+              <option value="hybrid">Hybrid</option>
+              <option value="dense">Dense only</option>
+              <option value="sparse">Sparse only</option>
+            </select>
+          </label>
+          <button class="rx-ghost-btn" type="button" id="rx-new-chat"><i class="fas fa-pen-to-square" aria-hidden="true"></i><span>New chat</span></button>
+        </div>
+      </header>
+
+      <div class="rx-thread" id="rag-answer" aria-live="polite">
+        <div class="rx-empty" id="rx-empty">
+          <div class="rx-orb" aria-hidden="true"><i class="fas fa-wand-magic-sparkles"></i></div>
+          <h2>Ask your filings anything</h2>
+          <p>Chat with Gemini, or pick a source to get answers grounded in 10-Ks and annual reports, with page, section and table citations.</p>
+          <div class="rx-starters" id="rx-starters"></div>
+          <div class="rx-capabilities">
+            <span><i class="fas fa-table" aria-hidden="true"></i> Table-aware</span>
+            <span><i class="fas fa-diagram-project" aria-hidden="true"></i> Multi-hop</span>
+            <span><i class="fas fa-shield-halved" aria-hidden="true"></i> Figure checks</span>
+            <span><i class="fas fa-indian-rupee-sign" aria-hidden="true"></i> ₹ crore aware</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rx-composer-wrap">
+        <section class="rx-context" id="rag-investigation-context" aria-live="polite" hidden>
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+          <p><strong>Investigating:</strong> <span id="rag-investigation-details"></span>
+            <small>A model flag is not proof of fraud; use citations to separate evidence from inference.</small></p>
+          <button class="rx-icon-btn" type="button" id="rag-investigation-dismiss" aria-label="Dismiss transaction context">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+          </button>
+        </section>
+
+        <form class="rx-composer" id="rag-question-form">
+          <button class="rx-icon-btn" type="button" id="rx-attach" aria-label="Add a source"><i class="fas fa-paperclip" aria-hidden="true"></i></button>
+          <label class="rx-scope-chip" title="Answer from">
+            <i class="fas fa-file-lines" aria-hidden="true"></i>
+            <select id="rag-document-select" aria-label="Answer from">
+              <option value="">General chat</option>
+            </select>
+          </label>
+          <textarea id="rag-question" rows="1" maxlength="1000" placeholder="Ask about revenue, risks, cash flow… (Shift+Enter for a new line)" required></textarea>
+          <button class="rx-send" id="rag-ask-button" type="submit" aria-label="Send"><i class="fas fa-arrow-up" aria-hidden="true"></i></button>
+        </form>
+        <p class="rx-footnote">FinRAG can make mistakes. Check figures against the cited sources. <span id="rx-count">0/1000</span></p>
+      </div>
+    </section>
+
+    <!-- ============ EVIDENCE ============ -->
+    <aside class="rx-evidence" id="rx-evidence" aria-label="Evidence" hidden>
+      <div class="rx-evidence-head">
+        <div>
+          <small>EVIDENCE</small>
+          <strong id="rx-evidence-title">Source</strong>
+        </div>
+        <button class="rx-icon-btn" type="button" id="rx-close-evidence" aria-label="Close evidence"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+      </div>
+      <div class="rx-evidence-body" id="rx-evidence-body"></div>
+    </aside>
+  </div>
+
+  <!-- ============ ADD SOURCE DIALOG ============ -->
+  <dialog class="rx-dialog" id="rx-add-dialog" aria-labelledby="rx-add-title">
+    <div class="rx-dialog-head">
+      <h2 id="rx-add-title">Add a source</h2>
+      <button class="rx-icon-btn" type="button" id="rx-close-add" aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button>
     </div>
-  </main>
-  <script src="/static/js/rag.js?v=1" defer></script>
+    <div class="rx-tabs" role="tablist">
+      <button type="button" role="tab" class="active" data-tab="upload"><i class="fas fa-arrow-up-from-bracket" aria-hidden="true"></i> Upload</button>
+      <button type="button" role="tab" data-tab="library"><i class="fas fa-book" aria-hidden="true"></i> 10-K library</button>
+      <button type="button" role="tab" data-tab="sec"><i class="fas fa-building-columns" aria-hidden="true"></i> SEC EDGAR</button>
+      <button type="button" role="tab" data-tab="url"><i class="fas fa-link" aria-hidden="true"></i> URL</button>
+    </div>
+
+    <div class="rx-tab-panel active" data-panel="upload">
+      <form id="rag-upload-form">
+        <label class="rx-drop" for="rag-file" id="rx-drop">
+          <i class="fas fa-cloud-arrow-up" aria-hidden="true"></i>
+          <strong id="rag-file-name">Drop a file or click to browse</strong>
+          <small>PDF, HTML, Markdown or text · up to 10 MB</small>
+        </label>
+        <input id="rag-file" name="file" type="file" accept=".pdf,.html,.htm,.md,.txt" required hidden>
+        <button class="rx-primary" type="submit" id="rag-index-button"><i class="fas fa-layer-group" aria-hidden="true"></i> Index document</button>
+      </form>
+    </div>
+
+    <div class="rx-tab-panel" data-panel="library">
+      <p class="rx-hint">48 bundled SEC 10-K filings, ready to index.</p>
+      <label class="rx-search">
+        <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+        <input id="rx-catalog-filter" type="search" placeholder="Search companies" autocomplete="off">
+      </label>
+      <div class="rx-catalog" id="rag-catalog-list"><p class="rx-hint">Loading reports…</p></div>
+    </div>
+
+    <div class="rx-tab-panel" data-panel="sec">
+      <form id="rag-sec-form" class="rx-form">
+        <p class="rx-hint">Fetch the latest filing directly from SEC EDGAR.</p>
+        <div class="rx-row">
+          <input id="rag-sec-ticker" placeholder="Ticker, e.g. AAPL" maxlength="10" autocomplete="off" required>
+          <select id="rag-sec-form-type" aria-label="Filing type">
+            <option>10-K</option><option>10-Q</option><option>8-K</option><option>20-F</option>
+          </select>
+        </div>
+        <button class="rx-primary" type="submit"><i class="fas fa-download" aria-hidden="true"></i> Fetch latest filing</button>
+      </form>
+    </div>
+
+    <div class="rx-tab-panel" data-panel="url">
+      <form id="rag-url-form" class="rx-form">
+        <p class="rx-hint">Import a public PDF or HTML report, e.g. an Indian annual report from BSE, NSE or a company website.</p>
+        <input id="rag-url" type="url" placeholder="https://…/annual-report.pdf" maxlength="2000" required>
+        <button class="rx-primary" type="submit"><i class="fas fa-link" aria-hidden="true"></i> Import from URL</button>
+      </form>
+    </div>
+
+    <p class="rx-dialog-status" id="rag-import-message" role="status"></p>
+  </dialog>
+
+  <div class="rx-scrim" id="rx-scrim" hidden></div>
+  <script src="/static/js/rag.js?v=5" defer></script>
 </body>
 </html>

@@ -44,6 +44,20 @@
     <p>Upload your transaction data in CSV, Excel, PDF, or Image format. The system will automatically extract and
       analyze transaction data.</p>
 
+    <!-- Sample downloads -->
+    <div class="glass card" style="margin-bottom:1rem; padding:1rem 1.5rem;">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem;">
+        <div>
+          <strong style="font-size:0.9rem;">📥 Download sample files to test the upload</strong>
+          <p style="color:#aaa; font-size:0.8rem; margin:0.2rem 0 0;">Use these to see the expected column format before uploading your own data.</p>
+        </div>
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <a href="/static/samples/sample_transactions.csv" download class="btn" style="background:#2ecc71; font-size:0.82rem; padding:6px 14px; text-decoration:none;">⬇ Sample CSV</a>
+          <a href="/static/samples/statement_demo.pdf" download class="btn" style="background:#3b82f6; font-size:0.82rem; padding:6px 14px; text-decoration:none;">⬇ Sample PDF</a>
+        </div>
+      </div>
+    </div>
+
     <div class="glass card">
       <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
         <p><i class="fas fa-cloud-upload-alt" style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary);"></i>
@@ -57,9 +71,14 @@
 
       <div id="fileInfo" class="mt-2 text-center" style="display: none;"></div>
 
-      <button id="uploadBtn" class="btn mt-2" style="width: 100%; display: none;" onclick="upload()">
-        <i class="fas fa-upload"></i> Upload & Analyze
-      </button>
+      <div style="display:flex; gap:0.75rem; margin-top:0.5rem;">
+        <button id="uploadBtn" class="btn" style="flex:1; display:none;" onclick="upload()">
+          <i class="fas fa-upload"></i> Upload &amp; Analyze
+        </button>
+        <button id="cancelBtn" class="btn btn-outline" style="flex:1; display:none; color:#e74c3c; border-color:rgba(231,76,60,0.5);" onclick="cancelUpload()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+      </div>
 
       <div id="output" class="mt-2 text-center"></div>
 
@@ -71,10 +90,45 @@
         <p id="progressText" style="margin-top: 0.5rem; color: #aaa;">Uploading...</p>
       </div>
     </div>
+
+    <!-- Upload History -->
+    <div class="glass card" style="margin-top:1.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <h2 style="margin:0;">📋 Upload History</h2>
+          <span class="info-icon" data-tip="Each row is one uploaded file. Delete an upload to remove all its transactions from your account. Duplicate transactions are automatically skipped on re-upload.">ⓘ</span>
+        </div>
+        <button class="btn" onclick="loadHistory()" style="background:rgba(255,255,255,0.08); font-size:0.8rem; padding:5px 12px;">↻ Refresh</button>
+      </div>
+      <div id="history-list">
+        <div style="text-align:center; padding:1.5rem; color:#555;">Loading upload history…</div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : (window.location.port ? window.location.origin.replace(/:\d+$/, ':5000') : window.location.origin + ':5000');
+    const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
+
+    let currentAbortController = null;
+
+    function cancelUpload() {
+      // Abort any in-flight request
+      if (currentAbortController) {
+        currentAbortController.abort();
+        currentAbortController = null;
+      }
+      // Reset UI
+      document.getElementById('fileInput').value = '';
+      document.getElementById('fileInfo').style.display = 'none';
+      document.getElementById('fileInfo').innerHTML = '';
+      document.getElementById('uploadBtn').style.display = 'none';
+      document.getElementById('uploadBtn').disabled = false;
+      document.getElementById('uploadBtn').innerHTML = '<i class="fas fa-upload"></i> Upload &amp; Analyze';
+      document.getElementById('cancelBtn').style.display = 'none';
+      document.getElementById('progressBar').style.display = 'none';
+      document.getElementById('progressFill').style.width = '0%';
+      document.getElementById('output').innerHTML = '';
+    }
 
     // Enable drag and drop
     const uploadArea = document.getElementById('uploadArea');
@@ -117,7 +171,8 @@
           </div>
         `;
         document.getElementById('fileInfo').style.display = 'block';
-        document.getElementById('uploadBtn').style.display = 'inline-block';
+        document.getElementById('uploadBtn').style.display = 'flex';
+        document.getElementById('cancelBtn').style.display = 'flex';
         document.getElementById('output').innerHTML = '';
       }
     }
@@ -193,6 +248,7 @@
           notice.className = 'success';
           notice.textContent = `Imported ${result.imported} transactions. Processed ${result.processed}; rejected ${result.rejected}; duplicates skipped ${result.duplicates_skipped}; unchanged ${result.unchanged}.`;
           panel.replaceChildren(notice);
+          loadHistory();
           document.getElementById('progressBar').style.display = 'none';
           document.getElementById('uploadBtn').disabled = false;
           document.getElementById('uploadBtn').innerHTML = '<i class="fas fa-upload"></i> Upload & Analyze';
@@ -215,7 +271,7 @@
       const token = localStorage.getItem('token');
       if (!token) {
         alert('Session expired. Please login.');
-        window.location.href = 'auth.html';
+        window.location.href = '/login';
         return;
       }
 
@@ -245,6 +301,8 @@
         }
       }, 200);
 
+      currentAbortController = new AbortController();
+
       const fd = new FormData();
       fd.append('file', f);
 
@@ -252,7 +310,8 @@
         const res = await fetch(API_BASE + '/upload', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token },
-          body: fd
+          body: fd,
+          signal: currentAbortController.signal
         });
 
         clearInterval(progressInterval);
@@ -261,12 +320,15 @@
 
         const data = await res.json();
 
+        currentAbortController = null;
+        document.getElementById('cancelBtn').style.display = 'none';
+
         if (res.ok) {
           if (data.status === 'preview') {
             progressText.textContent = 'Preview ready.';
             progressBar.style.display = 'none';
             uploadBtn.disabled = false;
-            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Analyze';
+            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload &amp; Analyze';
             renderTransactionPreview(data, token);
             return;
           }
@@ -294,7 +356,7 @@
                 </div>
                 </div>
                 <div style="margin-top: 1.5rem; text-align: center;">
-                    <button onclick="window.location.href='fraudalerts.html'" class="btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">View in Alerts >></button>
+                    <button onclick="window.location.href='/fraud-alerts'" class="btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">View in Alerts >></button>
                 </div>
              `;
           } else {
@@ -302,11 +364,12 @@
           }
 
           output.innerHTML = successHtml;
+          loadHistory();
 
           // Only auto-redirect if it's NOT an image analysis
           if (!data.explanation) {
             setTimeout(() => {
-              window.location.href = 'fraudalerts.html';
+              window.location.href = '/fraud-alerts';
             }, 2000);
           }
         } else {
@@ -338,21 +401,137 @@
           errorHtml += `</div>`;
 
           output.innerHTML = errorHtml;
+          document.getElementById('cancelBtn').style.display = 'none';
           uploadBtn.disabled = false;
-          uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Analyze';
+          uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload &amp; Analyze';
         }
       } catch (err) {
         clearInterval(progressInterval);
+        currentAbortController = null;
         progressBar.style.display = 'none';
-        output.innerHTML = `
-          <div style="background: rgba(231, 76, 60, 0.1); padding: 1rem; border-radius: 8px; border: 1px solid #e74c3c;">
-            <p class="error"><strong>Network Error:</strong> Failed to connect to server. Please check your connection and try again.</p>
-          </div>
-        `;
+        document.getElementById('cancelBtn').style.display = 'none';
         uploadBtn.disabled = false;
-        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Analyze';
+        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload &amp; Analyze';
+
+        if (err.name === 'AbortError') {
+          output.innerHTML = `
+            <div style="background: rgba(243,156,18,0.1); padding: 1rem; border-radius: 8px; border: 1px solid #f39c12;">
+              <p style="color:#f39c12;"><strong>Upload cancelled.</strong> Select a file to try again.</p>
+            </div>`;
+        } else {
+          output.innerHTML = `
+            <div style="background: rgba(231, 76, 60, 0.1); padding: 1rem; border-radius: 8px; border: 1px solid #e74c3c;">
+              <p class="error"><strong>Network Error:</strong> Failed to connect to server. Please check your connection and try again.</p>
+            </div>`;
+        }
       }
     }
+
+    // ── Upload History ────────────────────────────────────────────────────────
+    async function loadHistory() {
+      const el = document.getElementById('history-list');
+      el.innerHTML = '<div style="text-align:center; padding:1rem; color:#555;">Loading…</div>';
+      try {
+        const res = await fetch(API_BASE + '/api/imports', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const data = await res.json();
+        const imports = data.imports || [];
+        if (!imports.length) {
+          el.innerHTML = '<div style="text-align:center; padding:1.5rem; color:#555; font-size:0.85rem;">No uploads yet. Upload a bank statement above to get started.</div>';
+          return;
+        }
+        el.innerHTML = '';
+        imports.forEach(imp => {
+          const rolledBack = !!imp.rolled_back_at;
+          const date = imp.created_at ? new Date(imp.created_at).toLocaleString() : '—';
+          const txnCount = imp.transactions_present ?? 0;
+          const totalDetected = imp.rows_detected ?? imp.total_records ?? '?';
+          const rejected = imp.rejected_rows ?? 0;
+          const dupes = imp.duplicate_rows ?? 0;
+
+          const row = document.createElement('div');
+          row.style.cssText = `
+            display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+            padding:0.85rem 1rem; border-radius:8px; margin-bottom:0.5rem;
+            background:${rolledBack ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.2)'};
+            border:1px solid ${rolledBack ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)'};
+            opacity:${rolledBack ? '0.55' : '1'};
+          `;
+
+          row.innerHTML = `
+            <div style="display:flex; align-items:center; gap:0.75rem; min-width:0; flex:1;">
+              <span style="font-size:1.3rem; flex-shrink:0;">${rolledBack ? '🗑️' : '📄'}</span>
+              <div style="min-width:0;">
+                <div style="font-weight:600; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                     title="${imp.file_name || 'Unknown file'}">${imp.file_name || 'Unknown file'}</div>
+                <div style="font-size:0.75rem; color:#888; margin-top:2px;">
+                  ${date} &nbsp;·&nbsp;
+                  ${totalDetected} detected &nbsp;·&nbsp;
+                  <span style="color:#2ecc71;">${txnCount} active</span>
+                  ${rejected > 0 ? ` &nbsp;·&nbsp; <span style="color:#e74c3c;">${rejected} rejected</span>` : ''}
+                  ${dupes > 0 ? ` &nbsp;·&nbsp; <span style="color:#f59e0b;">${dupes} duplicates skipped</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem; flex-shrink:0;">
+              ${rolledBack
+                ? '<span style="font-size:0.75rem; color:#666; padding:4px 10px; border:1px solid #333; border-radius:20px;">Deleted</span>'
+                : txnCount === 0
+                  ? '<span style="font-size:0.75rem; color:#666; padding:4px 10px;">No transactions</span>'
+                  : `<button class="btn del-btn" data-batch="${imp.import_batch_id}" data-name="${imp.file_name || 'this upload'}" data-count="${txnCount}"
+                       style="background:rgba(231,76,60,0.15); color:#e74c3c; border:1px solid rgba(231,76,60,0.3); font-size:0.78rem; padding:5px 12px;">
+                       🗑 Delete (${txnCount} txns)
+                     </button>`
+              }
+            </div>`;
+          el.appendChild(row);
+        });
+
+        // Attach delete handlers
+        el.querySelectorAll('.del-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const batchId = btn.dataset.batch;
+            const name    = btn.dataset.name;
+            const count   = btn.dataset.count;
+            if (!confirm(`Delete "${name}"?\n\nThis will permanently remove ${count} transaction(s) from your account. This cannot be undone.`)) return;
+            btn.disabled = true;
+            btn.textContent = 'Deleting…';
+            try {
+              const res = await fetch(API_BASE + '/upload/rollback', {
+                method: 'POST',
+                headers: {
+                  'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ import_batch_id: batchId })
+              });
+              const data = await res.json();
+              if (res.ok) {
+                await loadHistory();
+              } else {
+                btn.disabled = false;
+                btn.textContent = `🗑 Delete (${count} txns)`;
+                alert('Error: ' + (data.error || 'Delete failed'));
+              }
+            } catch (e) {
+              btn.disabled = false;
+              btn.textContent = `🗑 Delete (${count} txns)`;
+              alert('Network error. Please try again.');
+            }
+          });
+        });
+      } catch (e) {
+        el.innerHTML = '<div style="text-align:center; padding:1rem; color:#e74c3c; font-size:0.85rem;">Could not load upload history. Check your connection.</div>';
+      }
+    }
+
+    // Load history on page load, and after each successful upload
+    document.addEventListener('DOMContentLoaded', loadHistory);
+
+    // Patch the existing upload success to also refresh history
+    const _origUpload = upload;
+    window._refreshHistoryAfterUpload = loadHistory;
   </script>
 </body>
 
