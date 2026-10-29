@@ -1662,3 +1662,205 @@ section {
         align-items: flex-start;
     }
 }
+
+/* ═══════════════════════════════════════════════════════
+   GLOBAL TOAST NOTIFICATIONS
+═══════════════════════════════════════════════════════ */
+#toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    pointer-events: none;
+}
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.2rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #fff;
+    min-width: 260px;
+    max-width: 380px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+    pointer-events: all;
+    animation: toastIn 0.28s cubic-bezier(.22,.68,0,1.2) forwards;
+    backdrop-filter: blur(12px);
+}
+.toast.toast-out { animation: toastOut 0.22s ease forwards; }
+.toast-success { background: rgba(16,185,129,0.92); border-left: 4px solid #059669; }
+.toast-error   { background: rgba(239,68,68,0.92);  border-left: 4px solid #dc2626; }
+.toast-warn    { background: rgba(245,158,11,0.92);  border-left: 4px solid #d97706; }
+.toast-info    { background: rgba(59,130,246,0.92);  border-left: 4px solid #2563eb; }
+.toast i { font-size: 1rem; flex-shrink: 0; }
+.toast-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0;
+    line-height: 1;
+}
+.toast-close:hover { color: #fff; }
+@keyframes toastIn  { from { opacity:0; transform:translateY(16px) scale(0.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes toastOut { from { opacity:1; transform:translateY(0);  } to { opacity:0; transform:translateY(10px); } }
+
+/* ═══════════════════════════════════════════════════════
+   GLOBAL STYLED CONFIRM MODAL
+═══════════════════════════════════════════════════════ */
+#confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+#confirm-overlay.active { display: flex; }
+#confirm-box {
+    background: #1a1a2e;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 2rem;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    animation: toastIn 0.22s ease;
+}
+#confirm-box h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+#confirm-box p  { color: #aaa; font-size: 0.88rem; margin: 0 0 1.5rem; line-height: 1.5; }
+.confirm-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+.confirm-actions .btn-cancel {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #ccc;
+    padding: 0.55rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    transition: background 0.2s;
+}
+.confirm-actions .btn-cancel:hover { background: rgba(255,255,255,0.14); color: #fff; }
+.confirm-actions .btn-danger {
+    background: rgba(239,68,68,0.85);
+    border: none;
+    color: #fff;
+    padding: 0.55rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+.confirm-actions .btn-danger:hover { background: #ef4444; }
+.confirm-actions .btn-confirm {
+    background: var(--primary);
+    border: none;
+    color: #fff;
+    padding: 0.55rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+.confirm-actions .btn-confirm:hover { background: #5a60d8; }
+
+/* ═══════════════════════════════════════════════════════
+   SESSION EXPIRY WARNING BANNER
+═══════════════════════════════════════════════════════ */
+#session-warning {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(245,158,11,0.95);
+    color: #1a1a2e;
+    text-align: center;
+    padding: 0.65rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    z-index: 9998;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+}
+#session-warning.active { display: flex; }
+#session-warning button {
+    background: #1a1a2e;
+    color: #f59e0b;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 14px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PASSWORD SHOW/HIDE + STRENGTH
+═══════════════════════════════════════════════════════ */
+.pass-wrap { position: relative; }
+.pass-wrap input { padding-right: 2.8rem !important; }
+.pass-toggle {
+    position: absolute;
+    right: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s;
+}
+.pass-toggle:hover { color: #ccc; }
+.strength-bar {
+    height: 4px;
+    border-radius: 4px;
+    margin-top: 5px;
+    transition: width 0.3s, background 0.3s;
+    width: 0%;
+}
+.strength-label { font-size: 0.73rem; color: #888; margin-top: 3px; }
+
+/* ═══════════════════════════════════════════════════════
+   BREADCRUMB
+═══════════════════════════════════════════════════════ */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 1.25rem;
+}
+.breadcrumb a { color: #888; text-decoration: none; transition: color 0.2s; }
+.breadcrumb a:hover { color: #ccc; }
+.breadcrumb span { color: #444; }
+
+/* ═══════════════════════════════════════════════════════
+   SKELETON LOADER
+═══════════════════════════════════════════════════════ */
+.skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 6px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skeleton-line { height: 14px; margin-bottom: 8px; }
+.skeleton-line.w-full { width: 100%; }
+.skeleton-line.w-3q   { width: 75%; }
+.skeleton-line.w-half { width: 50%; }
+.skeleton-card { padding: 1rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.07); margin-bottom: 0.75rem; }

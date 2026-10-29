@@ -1,395 +1,417 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
 
 <head>
   <meta charset="utf-8">
-  <title>Auth - BFSI Intelligence</title>
-  <link rel="stylesheet" href="/static/css/styles.css?v=3">
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
+  <title>Login | BFSI Intelligence</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=8">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    .auth-container {
-      display: flex;
-      min-height: 100vh;
-      overflow: hidden;
-    }
+    .auth-container { display:flex; min-height:100vh; overflow:hidden; }
 
+    /* ── Left trust panel ── */
     .auth-left {
       flex: 1;
-      background: rgba(0, 0, 0, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      padding: 2rem;
+      background: linear-gradient(145deg, rgba(78,84,200,0.18) 0%, rgba(15,15,35,0.95) 100%);
+      border-right: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; padding: 3rem 2.5rem; gap: 2rem;
     }
+    .auth-left h1 { font-size: 2rem; margin: 0; }
+    .auth-left p  { color: #aaa; text-align:center; max-width:320px; line-height:1.6; margin:0; }
+    .trust-badges { display:flex; flex-direction:column; gap:0.75rem; width:100%; max-width:280px; }
+    .trust-badge  {
+      display:flex; align-items:center; gap:0.75rem;
+      background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+      border-radius:10px; padding:0.75rem 1rem; font-size:0.85rem; color:#ccc;
+    }
+    .trust-badge i { color: #2ecc71; font-size:1rem; flex-shrink:0; }
 
+    /* ── Right form panel ── */
     .auth-right {
-      flex: 1;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 2rem 1rem;
-      overflow-y: auto;
+      flex:1; display:flex; align-items:flex-start; justify-content:center;
+      padding:2rem 1rem; overflow-y:auto;
     }
-
-    .auth-box {
-      width: 100%;
-      max-width: 420px;
-      margin-top: 1rem;
-    }
-
-    .hidden { display: none; }
+    .auth-box { width:100%; max-width:420px; margin-top:1rem; }
+    .hidden   { display:none; }
 
     .back-home {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      color: #888;
-      font-size: 0.82rem;
-      text-decoration: none;
-      margin-bottom: 1.25rem;
-      padding: 6px 12px;
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 20px;
-      transition: color 0.2s, border-color 0.2s;
+      display:inline-flex; align-items:center; gap:0.4rem;
+      color:#888; font-size:0.82rem; text-decoration:none;
+      margin-bottom:1.25rem; padding:6px 12px;
+      border:1px solid rgba(255,255,255,0.1); border-radius:20px;
+      transition:color 0.2s, border-color 0.2s;
     }
-    .back-home:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+    .back-home:hover { color:#fff; border-color:rgba(255,255,255,0.3); }
 
-    @media (max-width: 680px) {
-      .auth-container { flex-direction: column; }
-      .auth-left { min-height: 180px; flex: none; }
-      .auth-right { flex: 1; }
+    /* OTP countdown */
+    #resend-countdown { font-size:0.78rem; color:#888; text-align:center; margin-top:0.4rem; }
+
+    /* Inline message */
+    .auth-msg { font-size:0.85rem; text-align:center; margin-top:0.75rem; min-height:1.2em; }
+    .auth-msg.err  { color:#ff6b6b; }
+    .auth-msg.ok   { color:#2ecc71; }
+
+    @media (max-width:680px) {
+      .auth-container { flex-direction:column; }
+      .auth-left { min-height:200px; flex:none; padding:1.5rem; }
+      .auth-right { flex:1; }
     }
   </style>
 </head>
 
 <body>
+  <!-- navbar.js loaded for toast system -->
+  <script src="/static/js/navbar.js?v=8"></script>
+
   <div class="auth-container">
+
+    <!-- ── Left: trust panel ── -->
     <div class="auth-left glass">
-      <h1>BFSI Intelligence</h1>
-      <p style="font-size: 1.2rem; text-align: center; color: #ccc;">
-        Advanced Fraud Detection & Predictive Analytics for the Financial Sector.
-      </p>
+      <div style="text-align:center;">
+        <div style="font-size:2.8rem; margin-bottom:0.5rem;">🏦</div>
+        <h1>BFSI Intelligence</h1>
+        <p>AI-powered fraud detection &amp; private financial document Q&amp;A — built for the financial sector.</p>
+      </div>
+      <div class="trust-badges">
+        <div class="trust-badge"><i class="fas fa-shield-alt"></i> ML Fraud Detection (98.7% accuracy)</div>
+        <div class="trust-badge"><i class="fas fa-search"></i> FinRAG Copilot — page-level citations</div>
+        <div class="trust-badge"><i class="fas fa-lock"></i> JWT + OTP two-factor security</div>
+        <div class="trust-badge"><i class="fas fa-database"></i> Your data never leaves your server</div>
+      </div>
     </div>
+
+    <!-- ── Right: forms ── -->
     <div class="auth-right">
       <div class="auth-box glass card">
-        <a href="/" class="back-home">← Back to Home</a>
+        <a href="/" class="back-home"><i class="fas fa-arrow-left"></i> Back to Home</a>
 
-        <!-- Login Form -->
+        <!-- ── Login ── -->
         <div id="loginForm">
-          <h2 class="text-center">Login</h2>
+          <h2 class="text-center">Welcome back</h2>
           <form onsubmit="handleLogin(event)">
-            <input type="email" id="loginEmail" placeholder="Email Address" required>
-            <input type="password" id="loginPass" placeholder="Password" required>
-            <button type="submit" class="btn" style="width: 100%">Sign In</button>
+            <input type="email" id="loginEmail" placeholder="Email Address" required autocomplete="email">
+            <div class="pass-wrap">
+              <input type="password" id="loginPass" placeholder="Password" required autocomplete="current-password">
+              <button type="button" class="pass-toggle" onclick="togglePass('loginPass', this)" tabindex="-1">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div style="text-align:right; margin:0.3rem 0 0.75rem;">
+              <a href="#" onclick="showForgot(); return false;" style="font-size:0.8rem; color:#888;">Forgot password?</a>
+            </div>
+            <button type="submit" class="btn" style="width:100%">Sign In</button>
           </form>
-          <p class="text-center mt-2">
-            New user? <a href="#" onclick="toggleAuth()">Create an account</a>
+          <p class="text-center mt-2" style="font-size:0.85rem;">
+            New here? <a href="#" onclick="showRegister(); return false;">Create an account</a>
           </p>
         </div>
 
-        <!-- Register Form -->
+        <!-- ── Register ── -->
         <div id="registerForm" class="hidden">
-          <h2 class="text-center">Register</h2>
+          <h2 class="text-center">Create Account</h2>
           <form onsubmit="handleRegister(event)">
-            <input type="text" id="regName" placeholder="Full Name" required>
-            <input type="email" id="regEmail" placeholder="Email Address" required>
-            <input type="password" id="regPass" placeholder="Password" required>
-            <button type="submit" class="btn" style="width: 100%">Register</button>
+            <input type="text" id="regName" placeholder="Full Name" required autocomplete="name">
+            <input type="email" id="regEmail" placeholder="Email Address" required autocomplete="email">
+            <div class="pass-wrap">
+              <input type="password" id="regPass" placeholder="Password (min 8 chars)" required autocomplete="new-password" oninput="checkStrength(this.value)">
+              <button type="button" class="pass-toggle" onclick="togglePass('regPass', this)" tabindex="-1">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div class="strength-bar" id="strength-bar"></div>
+            <div class="strength-label" id="strength-label"></div>
+            <button type="submit" class="btn" style="width:100%; margin-top:0.75rem;">Register</button>
           </form>
-          <p class="text-center mt-2">
-            Already have an account? <a href="#" onclick="toggleAuth()">Sign In</a>
+          <p class="text-center mt-2" style="font-size:0.85rem;">
+            Already have an account? <a href="#" onclick="showLogin(); return false;">Sign In</a>
           </p>
         </div>
 
-
-        <!-- Forgot Password Link -->
-        <div id="forgotLink" class="text-center mt-2 hidden">
-          <a href="#" onclick="showForgot()">Forgot Password?</a>
-        </div>
-
-        <!-- Verify OTP Form -->
+        <!-- ── Verify OTP ── -->
         <div id="verifyForm" class="hidden">
           <h2 class="text-center">Verify Email</h2>
-          <p class="text-center" style="color: #ccc; font-size: 0.9rem;">Enter the OTP sent to your email</p>
+          <p class="text-center" style="color:#aaa; font-size:0.88rem; margin-bottom:1rem;">
+            We sent a 6-digit code to your email. Enter it below.
+          </p>
           <form onsubmit="handleVerify(event)">
             <input type="email" id="verifyEmail" placeholder="Email Address" required disabled>
-            <input type="text" id="verifyOtp" placeholder="Enter OTP" required>
-            <button type="submit" class="btn" style="width: 100%">Verify Account</button>
+            <input type="text" id="verifyOtp" placeholder="Enter 6-digit OTP" required maxlength="6"
+                   inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code"
+                   style="letter-spacing:0.3em; font-size:1.2rem; text-align:center;">
+            <button type="submit" class="btn" style="width:100%">Verify Account</button>
           </form>
-          <button type="button" id="resendOtpButton" class="btn" style="width: 100%; margin-top: 0.75rem;"
-            onclick="handleResendOtp()">Resend verification code</button>
-          <p class="text-center mt-2">
-            <a href="#" onclick="toggleAuth()">Back to Login</a>
+          <button type="button" id="resendOtpButton" class="btn" style="width:100%; margin-top:0.75rem; background:rgba(255,255,255,0.07);"
+            onclick="handleResendOtp()">Resend Code</button>
+          <div id="resend-countdown"></div>
+          <p class="text-center mt-2" style="font-size:0.85rem;">
+            <a href="#" onclick="showLogin(); return false;">Back to Login</a>
           </p>
         </div>
 
-        <!-- Forgot Password Form -->
+        <!-- ── Forgot Password ── -->
         <div id="forgotForm" class="hidden">
           <h2 class="text-center">Reset Password</h2>
+          <p class="text-center" style="color:#aaa; font-size:0.88rem; margin-bottom:1rem;">
+            Enter your registered email — we'll send a reset code.
+          </p>
           <form onsubmit="handleForgot(event)">
-            <input type="email" id="forgotEmail" placeholder="Enter your registered email" required>
-            <button type="submit" class="btn" style="width: 100%">Send OTP</button>
+            <input type="email" id="forgotEmail" placeholder="Registered email address" required autocomplete="email">
+            <button type="submit" class="btn" style="width:100%">Send Reset Code</button>
           </form>
-          <p class="text-center mt-2">
-            <a href="#" onclick="toggleAuth()">Back to Login</a>
+          <p class="text-center mt-2" style="font-size:0.85rem;">
+            <a href="#" onclick="showLogin(); return false;">Back to Login</a>
           </p>
         </div>
 
-        <!-- Reset Password Form -->
+        <!-- ── Reset Password ── -->
         <div id="resetForm" class="hidden">
           <h2 class="text-center">New Password</h2>
           <form onsubmit="handleReset(event)">
             <input type="email" id="resetEmail" placeholder="Email Address" required disabled>
-            <input type="text" id="resetOtp" placeholder="Enter OTP" required>
-            <input type="password" id="resetPass" placeholder="New Password" required>
-            <button type="submit" class="btn" style="width: 100%">Update Password</button>
+            <input type="text" id="resetOtp" placeholder="Enter OTP from email" required maxlength="6"
+                   inputmode="numeric" style="letter-spacing:0.3em; font-size:1.2rem; text-align:center;">
+            <div class="pass-wrap" style="margin-top:0.5rem;">
+              <input type="password" id="resetPass" placeholder="New Password (min 8 chars)" required autocomplete="new-password" oninput="checkStrength(this.value, 'reset')">
+              <button type="button" class="pass-toggle" onclick="togglePass('resetPass', this)" tabindex="-1">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div class="strength-bar" id="reset-strength-bar"></div>
+            <div class="strength-label" id="reset-strength-label"></div>
+            <button type="submit" class="btn" style="width:100%; margin-top:0.75rem;">Update Password</button>
           </form>
         </div>
 
-        <div id="message" class="text-center mt-2" style="color: #ff6b6b"></div>
+        <div id="message" class="auth-msg err"></div>
       </div>
-
     </div>
   </div>
 
   <script>
     const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
-
-    // Store email for multi-step flows
     let currentEmail = '';
+    let resendTimer = null;
 
-    function toggleAuth() {
-      // Hide all forms first
-      ['loginForm', 'registerForm', 'verifyForm', 'forgotForm', 'resetForm'].forEach(id => {
-        document.getElementById(id).classList.add('hidden');
-      });
-      document.getElementById('message').innerText = '';
-
-      // Toggle between login and register as default behavior, or reset to login
-      // A simple logic: if login is hidden, show it. If login is visible, show register.
-      // But we have more states now. Let's make it simple:
-      // If called from link "Create an account", we want register.
-      // If called from "Sign In", we want login.
-      // Since the links call this same function, we might need state or check what's visible.
-      // Let's implement specific functions for clarity, or improve this one.
-
-      // Current usage in HTML: onclick="toggleAuth()"
-      // Let's assume it switches Login <-> Register. 
-      // To recover from other states (Verify/Forgot), we should probably default to Login.
+    /* ── Show/Hide password ── */
+    function togglePass(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      btn.querySelector('i').className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
     }
 
-    // Improved navigation
+    /* ── Password strength ── */
+    function checkStrength(val, prefix = 'strength') {
+      const bar = document.getElementById(prefix + '-bar') || document.getElementById('strength-bar');
+      const lbl = document.getElementById(prefix + '-label') || document.getElementById('strength-label');
+      if (!bar) return;
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      const levels = [
+        { w:'20%', bg:'#e74c3c', t:'Weak' },
+        { w:'45%', bg:'#f39c12', t:'Fair' },
+        { w:'70%', bg:'#f1c40f', t:'Good' },
+        { w:'100%',bg:'#2ecc71', t:'Strong' }
+      ];
+      const lvl = levels[Math.min(score - 1, 3)] || levels[0];
+      bar.style.width = val.length ? lvl.w : '0%';
+      bar.style.background = lvl.bg;
+      lbl.textContent = val.length ? lvl.t : '';
+      lbl.style.color = lvl.bg;
+    }
+
+    /* ── OTP resend countdown ── */
+    function startResendCooldown(seconds = 60) {
+      const btn = document.getElementById('resendOtpButton');
+      const cd  = document.getElementById('resend-countdown');
+      btn.disabled = true;
+      let remaining = seconds;
+      resendTimer = setInterval(() => {
+        remaining--;
+        cd.textContent = `Resend available in ${remaining}s`;
+        if (remaining <= 0) {
+          clearInterval(resendTimer);
+          btn.disabled = false;
+          cd.textContent = '';
+        }
+      }, 1000);
+    }
+
+    /* ── Navigation helpers ── */
+    function setMsg(text, type = 'err') {
+      const el = document.getElementById('message');
+      el.textContent = text;
+      el.className = 'auth-msg ' + type;
+    }
+
+    function hideAll() {
+      ['loginForm','registerForm','verifyForm','forgotForm','resetForm'].forEach(id =>
+        document.getElementById(id).classList.add('hidden')
+      );
+      setMsg('');
+    }
+
     function showLogin() {
       hideAll();
       document.getElementById('loginForm').classList.remove('hidden');
-      document.getElementById('forgotLink').classList.remove('hidden');
     }
-
     function showRegister() {
       hideAll();
       document.getElementById('registerForm').classList.remove('hidden');
     }
-
     function showForgot() {
       hideAll();
       document.getElementById('forgotForm').classList.remove('hidden');
     }
-
-    function hideAll() {
-      ['loginForm', 'registerForm', 'verifyForm', 'forgotForm', 'resetForm', 'forgotLink'].forEach(id => {
-        document.getElementById(id).classList.add('hidden');
-      });
-      document.getElementById('message').innerText = '';
-    }
-
-    // Override the old toggleAuth to map to new functions for compatibility
     function toggleAuth() {
-      if (document.getElementById('loginForm').classList.contains('hidden')) {
-        showLogin();
-      } else {
-        showRegister();
-      }
+      document.getElementById('loginForm').classList.contains('hidden') ? showLogin() : showRegister();
     }
 
-    // Initialize
     showLogin();
 
+    /* ── Login ── */
     async function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value;
       const password = document.getElementById('loginPass').value;
-
       try {
         const res = await fetch(`${API_BASE}/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ email, password })
         });
         const data = await res.json();
-
         if (res.ok) {
-          try {
-            localStorage.setItem('token', data.token);
-            if (data.user) {
-              localStorage.setItem('user', JSON.stringify(data.user));
-            }
-          } catch (storageErr) {
-            console.warn("localStorage full, continuing anyway:", storageErr);
-            // Even if storage is full, we try to proceed to dashboard
-          }
+          try { localStorage.setItem('token', data.token); if (data.user) localStorage.setItem('user', JSON.stringify(data.user)); } catch {}
           window.location.href = '/dashboard';
         } else {
           const msg = data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Login failed');
-          document.getElementById('message').innerText = msg;
-
-          if (msg.includes('verify')) {
+          setMsg(msg);
+          if (msg.toLowerCase().includes('verify')) {
             currentEmail = email;
             document.getElementById('verifyEmail').value = currentEmail;
             hideAll();
             document.getElementById('verifyForm').classList.remove('hidden');
-            document.getElementById('message').innerText = "Please verify your account.";
+            startResendCooldown();
           }
         }
       } catch (err) {
-        console.error("Login Fetch Error:", err);
-        document.getElementById('message').innerText = `Connection Error: Backend unreachable (${err.message}). Is it running at ${API_BASE}?`;
+        setMsg(`Connection error: ${err.message}`);
       }
     }
 
+    /* ── Register ── */
     async function handleRegister(e) {
       e.preventDefault();
       const name = document.getElementById('regName').value;
       const email = document.getElementById('regEmail').value;
       const password = document.getElementById('regPass').value;
+      if (password.length < 8) { setMsg('Password must be at least 8 characters.'); return; }
       try {
         const res = await fetch(`${API_BASE}/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ name, email, password })
         });
         const data = await res.json();
-
         if (res.ok) {
           currentEmail = email;
           document.getElementById('verifyEmail').value = currentEmail;
           hideAll();
           document.getElementById('verifyForm').classList.remove('hidden');
-          alert('Registration successful! OTP sent to your email.');
+          startResendCooldown();
+          setMsg('Registered! Check your email for the OTP.', 'ok');
         } else {
           if (data.verification_pending) {
             currentEmail = email;
             document.getElementById('verifyEmail').value = currentEmail;
             hideAll();
             document.getElementById('verifyForm').classList.remove('hidden');
+            startResendCooldown();
           }
-          const msg = data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Registration failed');
-          document.getElementById('message').innerText = msg;
+          setMsg(data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Registration failed'));
         }
-      } catch (err) {
-        console.error("Register Fetch Error:", err);
-        document.getElementById('message').innerText = `Connection Error: Backend unreachable (${err.message}). Is it running at ${API_BASE}?`;
-      }
+      } catch (err) { setMsg(`Connection error: ${err.message}`); }
     }
 
+    /* ── Resend OTP ── */
     async function handleResendOtp() {
-      const button = document.getElementById('resendOtpButton');
       const email = document.getElementById('verifyEmail').value || currentEmail;
-      if (!email) {
-        document.getElementById('message').innerText = 'Enter the email address used during registration.';
-        return;
-      }
-
-      button.disabled = true;
+      if (!email) { setMsg('Email address not found. Please go back and re-register.'); return; }
       try {
         const res = await fetch(`${API_BASE}/resend-registration-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ email })
         });
         const data = await res.json();
-        document.getElementById('message').innerText = data.message || data.error || 'Could not resend the code.';
-      } catch (err) {
-        document.getElementById('message').innerText = 'Could not contact the verification service. Try again later.';
-      } finally {
-        window.setTimeout(() => { button.disabled = false; }, 1000);
-      }
+        setMsg(data.message || data.error || 'Code sent!', res.ok ? 'ok' : 'err');
+        if (res.ok) startResendCooldown();
+      } catch { setMsg('Could not contact verification service.'); }
     }
 
+    /* ── Verify OTP ── */
     async function handleVerify(e) {
       e.preventDefault();
       const otp = document.getElementById('verifyOtp').value;
       const email = document.getElementById('verifyEmail').value || currentEmail;
-
       try {
         const res = await fetch(`${API_BASE}/verify-registration`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ email, otp })
         });
         const data = await res.json();
-
         if (res.ok) {
-          alert('Verification successful! Please login.');
+          showToast('Email verified! Please sign in.', 'success');
           showLogin();
-        } else {
-          document.getElementById('message').innerText = data.error || 'Verification failed';
-        }
-      } catch (err) {
-        console.error(err);
-        document.getElementById('message').innerText = 'Request failed: ' + err.message;
-      }
+        } else { setMsg(data.error || 'Verification failed'); }
+      } catch (err) { setMsg('Request failed: ' + err.message); }
     }
 
+    /* ── Forgot Password ── */
     async function handleForgot(e) {
       e.preventDefault();
       const email = document.getElementById('forgotEmail').value;
       currentEmail = email;
-
       try {
         const res = await fetch(`${API_BASE}/forgot-password`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ email })
         });
-
         if (res.ok) {
           hideAll();
           document.getElementById('resetEmail').value = currentEmail;
           document.getElementById('resetForm').classList.remove('hidden');
-          alert('OTP sent to your email.');
+          setMsg('Reset code sent to your email.', 'ok');
         } else {
           const data = await res.json();
-          document.getElementById('message').innerText = data.error || 'Failed to send OTP';
+          setMsg(data.error || 'Failed to send reset code');
         }
-      } catch (err) {
-        console.error(err);
-        document.getElementById('message').innerText = 'Request failed: ' + err.message;
-      }
+      } catch (err) { setMsg('Request failed: ' + err.message); }
     }
 
+    /* ── Reset Password ── */
     async function handleReset(e) {
       e.preventDefault();
       const email = document.getElementById('resetEmail').value;
-      const otp = document.getElementById('resetOtp').value;
+      const otp   = document.getElementById('resetOtp').value;
       const new_password = document.getElementById('resetPass').value;
-
+      if (new_password.length < 8) { setMsg('Password must be at least 8 characters.'); return; }
       try {
         const res = await fetch(`${API_BASE}/reset-password`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ email, otp, new_password })
         });
         if (res.ok) {
-          alert('Password reset successful! Please login.');
+          showToast('Password updated! Please sign in.', 'success');
           showLogin();
         } else {
           const data = await res.json();
-          document.getElementById('message').innerText = data.error || 'Reset failed';
+          setMsg(data.error || 'Reset failed');
         }
-      } catch (err) {
-        console.error(err);
-        document.getElementById('message').innerText = 'Request failed: ' + err.message;
-      }
+      } catch (err) { setMsg('Request failed: ' + err.message); }
     }
   </script>
 </body>

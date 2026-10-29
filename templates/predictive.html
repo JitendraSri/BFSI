@@ -1,9 +1,10 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
 
 <head>
   <meta charset="utf-8">
-  <title>Predictive Modeling - BFSI Intelligence</title>
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
+  <title>Predictions | BFSI Intelligence</title>
   <link rel="stylesheet" href="/static/css/styles.css?v=4">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -65,6 +66,7 @@
   <script src="/static/js/navbar.js?v=7"></script>
 
   <div class="container">
+    <nav class="breadcrumb"><a href="/dashboard">Dashboard</a><span>›</span>Predictive Analytics</nav>
     <div class="flex" style="justify-content: space-between; align-items: center;">
       <h1>Predictive Analytics</h1>
       <button class="btn" onclick="retrainModel()">🔄 Retrain Model</button>
@@ -160,12 +162,12 @@
         if (res.ok) {
           showResult(data.probability);
         } else if (data.status === 'not_ready') {
-          alert('Model is not trained yet. Click "Retrain Model" first.');
+          showToast('Model is not trained yet. Click "Retrain Model" first.', 'warn');
         } else {
-          alert('Error: ' + data.error);
+          showToast('Error: ' + data.error, 'error');
         }
       } catch (err) {
-        alert('Connection failed');
+        showToast('Connection failed — please try again.', 'error');
       }
     }
 

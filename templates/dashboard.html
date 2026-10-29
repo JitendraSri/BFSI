@@ -1,10 +1,11 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 
 <head>
   <meta charset="utf-8">
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - BFSI Intelligence</title>
+  <title>Dashboard | BFSI Intelligence</title>
   <link rel="stylesheet" href="/static/css/styles.css?v=7">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Chart.js -->
@@ -232,25 +233,11 @@
 
   </div>
 
-  <!-- Chatbot Widget -->
-  <div id="chat-fab" class="chat-fab" onclick="toggleChat()">
+  <!-- FinRAG Copilot shortcut -->
+  <a href="/rag" class="chat-fab" title="Open FinRAG Copilot" style="text-decoration:none; display:flex; align-items:center; justify-content:center;">
     🤖
-  </div>
+  </a>
 
-  <div id="chat-window" class="chat-window hidden">
-    <div class="chat-header">
-      <span>BFSI AI Advisor</span>
-      <button onclick="toggleChat()" style="background:none; border:none; color:white; cursor:pointer;">✖</button>
-    </div>
-    <div class="chat-body" id="chat-body">
-      <div class="chat-msg bot-msg">Hello! I'm your AI Financial Advisor. Ask me about your spending, risk, or financial
-        advice!</div>
-    </div>
-    <div class="chat-footer">
-      <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="handleChatKey(event)">
-      <button onclick="sendMessage()">➤</button>
-    </div>
-  </div>
 
   <!-- Curved Background Animation -->
   <script src="/static/js/curved-bg.js?v=10"></script>

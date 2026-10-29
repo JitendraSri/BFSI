@@ -1,9 +1,10 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
 
 <head>
   <meta charset="utf-8">
-  <title>Upload Data - BFSI Intelligence</title>
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
+  <title>Upload Data | BFSI Intelligence</title>
   <link rel="stylesheet" href="/static/css/styles.css?v=3">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -40,6 +41,7 @@
   <script src="/static/js/navbar.js?v=7"></script>
 
   <div class="container">
+    <nav class="breadcrumb"><a href="/dashboard">Dashboard</a><span>›</span>Upload Data</nav>
     <h1>Upload Transaction Data</h1>
     <p>Upload your transaction data in CSV, Excel, PDF, or Image format. The system will automatically extract and
       analyze transaction data.</p>
@@ -270,13 +272,13 @@
       const f = document.getElementById('fileInput').files[0];
       const token = localStorage.getItem('token');
       if (!token) {
-        alert('Session expired. Please login.');
+        showToast('Session expired — please log in again', 'error');
         window.location.href = '/login';
         return;
       }
 
       if (!f) {
-        alert('Please select a file first.');
+        showToast('Please select a file first', 'warn'); return;
         return;
       }
 
@@ -494,7 +496,12 @@
             const batchId = btn.dataset.batch;
             const name    = btn.dataset.name;
             const count   = btn.dataset.count;
-            if (!confirm(`Delete "${name}"?\n\nThis will permanently remove ${count} transaction(s) from your account. This cannot be undone.`)) return;
+            showConfirm({
+              title: `Delete "${name}"?`,
+              message: `This will permanently remove ${count} transaction(s) from your account. This cannot be undone.`,
+              okText: 'Delete',
+              danger: true,
+              onConfirm: async () => {
             btn.disabled = true;
             btn.textContent = 'Deleting…';
             try {
@@ -512,13 +519,15 @@
               } else {
                 btn.disabled = false;
                 btn.textContent = `🗑 Delete (${count} txns)`;
-                alert('Error: ' + (data.error || 'Delete failed'));
+                showToast(data.error || 'Delete failed', 'error');
               }
             } catch (e) {
               btn.disabled = false;
               btn.textContent = `🗑 Delete (${count} txns)`;
-              alert('Network error. Please try again.');
+              showToast('Network error — please try again', 'error');
             }
+              }
+            });
           });
         });
       } catch (e) {
@@ -536,3 +545,4 @@
 </body>
 
 </html>
+

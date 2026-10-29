@@ -1,9 +1,10 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
 
 <head>
   <meta charset="utf-8">
-  <title>Transactions - BFSI Intelligence</title>
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
+  <title>Transactions | BFSI Intelligence</title>
   <link rel="stylesheet" href="/static/css/styles.css?v=3">
   <link rel="stylesheet" href="/static/css/transactions.css?v=2">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -61,6 +62,7 @@
   <script src="/static/js/navbar.js?v=7"></script>
 
   <div class="container">
+    <nav class="breadcrumb"><a href="/dashboard">Dashboard</a><span>›</span>Transactions</nav>
     <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
       <h1 style="margin:0;">Transaction History</h1>
       <span class="info-icon" data-tip="All transactions imported from your uploaded bank statements. Flagged = ML model detected potential fraud. Dispute = flag for your own review.">ⓘ</span>
@@ -105,11 +107,17 @@
           <button class="btn" id="btnDelSel"
                   style="background:rgba(231,76,60,.15); color:#e74c3c; border:1px solid rgba(231,76,60,.3); display:none;"
                   onclick="deleteSelected()">🗑 Delete Selected</button>
+          <button class="btn"
+                  style="background:rgba(46,204,113,.1); color:#2ecc71; border:1px solid rgba(46,204,113,.3); font-size:0.8rem;"
+                  onclick="exportCSV()"><i class="fas fa-download"></i> Export CSV</button>
           <button class="btn" id="btnClearAll"
                   style="background:rgba(231,76,60,.08); color:#e74c3c; border:1px solid rgba(231,76,60,.2); font-size:0.8rem;"
                   onclick="clearAll()">✕ Clear All Transactions</button>
         </div>
       </div>
+
+      <!-- Date validation error -->
+      <div id="dateError" style="display:none; color:#f39c12; font-size:0.82rem; margin-bottom:0.5rem; padding:6px 10px; background:rgba(243,156,18,0.1); border-radius:6px; border-left:3px solid #f39c12;"></div>
 
       <table class="txn-table" style="min-width:700px;">
         <thead>
@@ -125,7 +133,11 @@
           </tr>
         </thead>
         <tbody id="txnBody">
-          <tr><td colspan="8" style="text-align:center; padding:2rem; color:#555;">Loading…</td></tr>
+          <tr><td colspan="8" style="padding:2rem;">
+            <div class="skeleton-card"><div class="skeleton skeleton-line w-full"></div><div class="skeleton skeleton-line w-3q"></div><div class="skeleton skeleton-line w-half"></div></div>
+            <div class="skeleton-card"><div class="skeleton skeleton-line w-full"></div><div class="skeleton skeleton-line w-3q"></div></div>
+            <div class="skeleton-card"><div class="skeleton skeleton-line w-full"></div><div class="skeleton skeleton-line w-half"></div></div>
+          </td></tr>
         </tbody>
       </table>
 
@@ -350,7 +362,18 @@
     function applyCustomFilter() {
       const start = document.getElementById('startDate').value;
       const end   = document.getElementById('endDate').value;
-      if (!start || !end) { alert('Please select both dates'); return; }
+      const errEl = document.getElementById('dateError');
+      if (!start || !end) {
+        errEl.textContent = 'Please select both a start date and an end date.';
+        errEl.style.display = 'block';
+        return;
+      }
+      if (new Date(start) > new Date(end)) {
+        errEl.textContent = 'Start date cannot be after end date.';
+        errEl.style.display = 'block';
+        return;
+      }
+      errEl.style.display = 'none';
       document.querySelectorAll('.filter-pill .btn').forEach(b => b.classList.remove('active-filter'));
       state.status    = null;
       state.startDate = start;
@@ -395,7 +418,7 @@
           method: 'POST', headers: { 'Authorization': 'Bearer ' + token }
         });
         const data = await res.json();
-        if (!res.ok) { alert(data.error || 'Could not update dispute status'); btn.disabled = false; return; }
+        if (!res.ok) { showToast(data.error || 'Could not update dispute status', 'error'); btn.disabled = false; return; }
 
         const row       = document.getElementById(`row-${tid}`);
         const badgeCell = row.querySelector('.badge');
@@ -414,7 +437,7 @@
           btn.title = 'Flag as disputed';
         }
       } catch (e) {
-        alert('Connection error');
+        showToast('Connection error — please try again', 'error');
       }
       btn.disabled = false;
     }
@@ -422,77 +445,119 @@
     async function disputeSelected() {
       const ids = getSelectedIds();
       if (!ids.length) return;
-      if (!confirm(`Flag ${ids.length} transaction(s) as disputed?`)) return;
-      for (const id of ids) {
-        const btn = document.querySelector(`#row-${id} .btn-dispute`);
-        if (btn) await toggleDispute(id, btn);
-      }
-      updateSelCount();
+      showConfirm({
+        title: `Dispute ${ids.length} transaction(s)?`,
+        message: 'These will be flagged for your review. You can remove the flag at any time.',
+        okText: 'Flag as Disputed',
+        danger: false,
+        onConfirm: async () => {
+          for (const id of ids) {
+            const btn = document.querySelector(`#row-${id} .btn-dispute`);
+            if (btn) await toggleDispute(id, btn);
+          }
+          updateSelCount();
+          showToast(`${ids.length} transaction(s) flagged as disputed`, 'warn');
+        }
+      });
     }
 
     // ── Delete ────────────────────────────────────────────────────────────────
     async function deleteTxn(tid) {
-      if (!confirm('Delete this transaction? This cannot be undone.')) return;
-      try {
-        const res = await fetch(`${API_BASE}/api/transactions/${tid}`, {
-          method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (res.ok) {
-          document.getElementById(`row-${tid}`)?.remove();
-          state.total = Math.max(0, state.total - 1);
-          renderSummary({});  // will be stale; reload is cleaner
-          loadTxns();
-        } else {
-          const d = await res.json();
-          alert(d.error || 'Failed to delete transaction');
+      showConfirm({
+        title: 'Delete transaction?',
+        message: 'This will permanently remove this transaction. This cannot be undone.',
+        okText: 'Delete',
+        onConfirm: async () => {
+          try {
+            const res = await fetch(`${API_BASE}/api/transactions/${tid}`, {
+              method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+              loadTxns();
+              showToast('Transaction deleted', 'success');
+            } else {
+              const d = await res.json();
+              showToast(d.error || 'Failed to delete transaction', 'error');
+            }
+          } catch { showToast('Connection error', 'error'); }
         }
-      } catch (e) { alert('Connection error'); }
+      });
     }
 
     async function deleteSelected() {
       const ids = getSelectedIds();
       if (!ids.length) return;
-      if (!confirm(`Permanently delete ${ids.length} transaction(s)? This cannot be undone.`)) return;
-      try {
-        const res  = await fetch(`${API_BASE}/api/transactions/bulk-delete`, {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ids })
-        });
-        const data = await res.json();
-        if (res.ok) { loadTxns(); } else { alert(data.error || 'Bulk delete failed'); }
-      } catch (e) { alert('Connection error'); }
+      showConfirm({
+        title: `Delete ${ids.length} transaction(s)?`,
+        message: 'This will permanently remove the selected transactions. This cannot be undone.',
+        okText: `Delete ${ids.length}`,
+        onConfirm: async () => {
+          try {
+            const res  = await fetch(`${API_BASE}/api/transactions/bulk-delete`, {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ids })
+            });
+            const data = await res.json();
+            if (res.ok) { loadTxns(); showToast(`${ids.length} transaction(s) deleted`, 'success'); }
+            else { showToast(data.error || 'Bulk delete failed', 'error'); }
+          } catch { showToast('Connection error', 'error'); }
+        }
+      });
     }
 
     async function clearAll() {
       const total = state.total;
-      if (!confirm(`This will PERMANENTLY DELETE all ${total} transaction(s) in the current filter.\n\nType OK to confirm.`)) return;
-      const confirm2 = window.prompt(`Type DELETE to confirm removing all ${total} transaction(s).`);
-      if (confirm2 !== 'DELETE') { alert('Cancelled.'); return; }
-      try {
-        // Build query params matching current filter
-        let url = `${API_BASE}/api/transactions/bulk-delete`;
-        const body = {};   // no ids = delete all matching user's transactions (current filter applies server-side by user_id only)
-        const res  = await fetch(url, {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (res.ok) {
-          alert(`Deleted ${data.deleted_count} transaction(s).`);
-          state.page      = 1;
-          state.status    = null;
-          state.startDate = null;
-          state.endDate   = null;
-          loadTxns();
-        } else {
-          alert(data.error || 'Clear all failed');
+      showConfirm({
+        title: `Delete ALL ${total} transaction(s)?`,
+        message: 'This will permanently remove every transaction in your current filter. This cannot be undone.',
+        okText: 'Delete All',
+        onConfirm: async () => {
+          try {
+            const res  = await fetch(`${API_BASE}/api/transactions/bulk-delete`, {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+              body: JSON.stringify({})
+            });
+            const data = await res.json();
+            if (res.ok) {
+              showToast(`Deleted ${data.deleted_count} transaction(s)`, 'success');
+              state.page = 1; state.status = null; state.startDate = null; state.endDate = null;
+              loadTxns();
+            } else { showToast(data.error || 'Clear all failed', 'error'); }
+          } catch { showToast('Connection error', 'error'); }
         }
-      } catch (e) { alert('Connection error'); }
+      });
+    }
+
+    // ── Export CSV ────────────────────────────────────────────────────────────
+    async function exportCSV() {
+      try {
+        let url = `${API_BASE}/api/transactions?page=1&page_size=9999`;
+        if (state.startDate) url += `&start_date=${state.startDate}`;
+        if (state.endDate)   url += `&end_date=${state.endDate}`;
+        if (state.status)    url += `&status=${state.status}`;
+        const res  = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        const rows = data.transactions || [];
+        if (!rows.length) { showToast('No transactions to export', 'warn'); return; }
+
+        const cols = ['transaction_id','timestamp','description','direction','transaction_amount','currency','channel','category','status'];
+        const csv  = [cols.join(','), ...rows.map(r =>
+          cols.map(c => `"${String(r[c] ?? '').replace(/"/g, '""')}"`).join(',')
+        )].join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a    = document.createElement('a');
+        a.href     = URL.createObjectURL(blob);
+        a.download = `transactions_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        showToast(`Exported ${rows.length} transactions`, 'success');
+      } catch { showToast('Export failed — please try again', 'error'); }
     }
   </script>
   <script src="/static/js/curved-bg.js"></script>
 </body>
 
 </html>
+

@@ -1,9 +1,10 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
 
 <head>
   <meta charset="utf-8">
-  <title>Insights - BFSI Intelligence</title>
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
+  <title>Insights | BFSI Intelligence</title>
   <link rel="stylesheet" href="/static/css/styles.css?v=3">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -46,10 +47,7 @@
     .pipe-full      { color: #a78bfa; font-weight: 700; }
     .recall-best    { color: #2ecc71; font-weight: 700; }
     .recall-miss    { color: #ccc; }
-    .delta-good     { color: #2ecc71; font-weight: 600; }
-    .delta-bad      { color: #e74c3c; font-weight: 600; }
-    .delta-warn     { color: #f59e0b; font-weight: 600; }
-    .cap-green      { color: #2ecc71; }
+.cap-green      { color: #2ecc71; }
     .cap-blue       { color: #60a5fa; }
   </style>
 </head>
@@ -58,6 +56,7 @@
   <script src="/static/js/navbar.js?v=7"></script>
 
   <div class="container">
+    <nav class="breadcrumb"><a href="/dashboard">Dashboard</a><span>›</span>AI Model Insights</nav>
     <div style="display:flex; align-items:center; gap:0.5rem;">
       <h1 style="margin:0;">AI Model Insights</h1>
       <span class="info-icon" data-tip="Benchmark results, fraud model metrics, datasets used, and FinRAG pipeline performance — all in one place.">ⓘ</span>
@@ -240,7 +239,6 @@
                   <th style="padding:7px 10px; text-align:left; color:#888; font-weight:600;">Metric / Feature</th>
                   <th style="padding:7px 10px; text-align:center; color:#888; font-weight:600;">Base Paper</th>
                   <th style="padding:7px 10px; text-align:center; color:#c4b5fd; font-weight:600;">Our FinRAG</th>
-                  <th style="padding:7px 10px; text-align:center; color:#888; font-weight:600;">Δ Gain</th>
                 </tr>
               </thead>
               <tbody>
@@ -252,17 +250,11 @@
                   <td style="padding:7px 10px; color:#ccc;">Recall@10 (FinDER)</td>
                   <td style="padding:7px 10px; text-align:center; color:#aaa;">85.0%</td>
                   <td style="padding:7px 10px; text-align:center; color:#2ecc71; font-weight:700;">{{ "%.1f"|format(r10_ours*100) }}%</td>
-                  <td class="{{ 'delta-good' if r10_ours >= r10_base else 'delta-bad' }}" style="padding:7px 10px; text-align:center;">
-                    {{ "%+.1f"|format((r10_ours - r10_base)*100) }} pp
-                  </td>
                 </tr>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                   <td style="padding:7px 10px; color:#ccc;">MRR (FinDER)</td>
                   <td style="padding:7px 10px; text-align:center; color:#aaa;">0.730</td>
                   <td style="padding:7px 10px; text-align:center; color:#c4b5fd; font-weight:700;">{{ "%.3f"|format(mrr_ours) }}</td>
-                  <td class="{{ 'delta-good' if mrr_ours >= mrr_base else 'delta-warn' }}" style="padding:7px 10px; text-align:center;">
-                    {{ "%+.3f"|format(mrr_ours - mrr_base) }}
-                  </td>
                 </tr>
                 {% set cap_rows = [
                   ('Table-aware chunking',         '❌ Text-only',       '✅ HTML/Markdown tables',      'cap-green'),
@@ -277,7 +269,6 @@
                   <td style="padding:7px 10px; color:#ccc;">{{ feat }}</td>
                   <td style="padding:7px 10px; text-align:center; color:#888;">{{ base_val }}</td>
                   <td class="{{ gain_color }}" style="padding:7px 10px; text-align:center;">{{ ours_val }}</td>
-                  <td class="{{ gain_color }}" style="padding:7px 10px; text-align:center; font-weight:600;">New capability</td>
                 </tr>
                 {% endfor %}
               </tbody>

@@ -526,65 +526,6 @@ function getCommonChartOptions({ yTitle } = {}) {
     };
 }
 
-// --- Chatbot Functions ---
-
-function toggleChat() {
-    const win = document.getElementById('chat-window');
-    win.classList.toggle('hidden');
-}
-
-function handleChatKey(e) {
-    if (e.key === 'Enter') sendMessage();
-}
-
-async function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const msg = input.value.trim();
-    if (!msg) return;
-
-    // Add User Msg
-    addMsg(msg, 'user-msg');
-    input.value = '';
-
-    // Show Typing
-    const typingId = addMsg('Thinking...', 'bot-msg');
-
-    try {
-        const res = await fetch(API_BASE + '/api/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + localStorage.getItem('token')
-            },
-            body: JSON.stringify({ query: msg })
-        });
-        const data = await res.json();
-
-        // Remove typing
-        document.getElementById(typingId).remove();
-
-        if (data.response) {
-            addMsg(data.response, 'bot-msg');
-        } else {
-            addMsg('Sorry, I encountered an error.', 'bot-msg');
-        }
-    } catch (e) {
-        if (document.getElementById(typingId)) {
-            document.getElementById(typingId).innerText = 'Connection error.';
-        }
-    }
-}
-
-function addMsg(text, className) {
-    const body = document.getElementById('chat-body');
-    const div = document.createElement('div');
-    div.className = `chat-msg ${className}`;
-    div.innerText = text;
-    div.id = 'msg-' + Date.now();
-    body.appendChild(div);
-    body.scrollTop = body.scrollHeight;
-    return div.id;
-}
 
 
 // --- Modal Functions ---

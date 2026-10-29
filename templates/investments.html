@@ -1,9 +1,10 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
 
 <head>
     <meta charset="utf-8">
-    <title>Investment Portfolio - BFSI Intelligence</title>
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
+    <title>Investments | BFSI Intelligence</title>
     <link rel="stylesheet" href="/static/css/styles.css?v=4">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -185,6 +186,13 @@
     <script src="/static/js/navbar.js?v=7"></script>
 
     <div class="container">
+        <nav class="breadcrumb"><a href="/dashboard">Dashboard</a><span>›</span>Investments</nav>
+        <!-- Demo portfolio notice -->
+        <div style="background:rgba(52,152,219,0.12); border:1px solid #3498db; border-radius:12px; padding:0.65rem 1rem; margin-bottom:1rem; font-size:0.85rem; color:#aad4f5; display:flex; align-items:center; gap:0.5rem;">
+          <i class="fas fa-flask" style="color:#3498db;"></i>
+          <span><strong>Demo Portfolio</strong> — Sample assets for illustration. Add your own holdings using the form below.</span>
+        </div>
+
         <!-- 1) Top Header Row -->
         <div class="header-row">
             <h1>💰 Investment Portfolio</h1>
@@ -365,7 +373,7 @@
             });
             if (!response.ok) {
                 const result = await response.json();
-                alert(result.error || 'Investment could not be saved.');
+                showToast(result.error || 'Investment could not be saved.', 'error');
                 return;
             }
 
@@ -374,13 +382,20 @@
         }
 
         async function deleteAsset(investmentId) {
-            if (!confirm('Remove this asset?')) return;
-            await fetch(API_BASE + '/api/investments/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ investment_id: investmentId })
+            showConfirm({
+                title: 'Remove asset?',
+                message: 'This will permanently delete this investment from your portfolio.',
+                okText: 'Remove',
+                danger: true,
+                onConfirm: async () => {
+                    await fetch(API_BASE + '/api/investments/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ investment_id: investmentId })
+                    });
+                    loadInvestments();
+                }
             });
-            loadInvestments();
         }
 
         async function checkAnalysis() {
