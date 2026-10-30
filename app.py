@@ -3976,9 +3976,9 @@ def register():
         return jsonify({'error': 'Enter a name of 1 to 120 characters.'}), 400
     if not email or len(email) > 254 or not re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', email):
         return jsonify({'error': 'Enter a valid email address.'}), 400
-    # bcrypt only uses the first 72 bytes, so longer passwords are rejected rather than silently truncated.
-    if not isinstance(password, str) or len(password) < 8 or len(password.encode('utf-8')) > 72:
-        return jsonify({'error': 'Use a password of at least 8 characters and no more than 72 UTF-8 bytes.'}), 400
+    # Accounts use a 6-digit numeric PIN.
+    if not isinstance(password, str) or not re.fullmatch(r'\d{6}', password):
+        return jsonify({'error': 'Set a 6-digit PIN (numbers only).'}), 400
     data = {**data, 'name': name, 'email': email}
 
     try:
@@ -4250,8 +4250,8 @@ def reset_password():
         return jsonify({'error': 'Email, reset code, and new password are required.'}), 400
     if not otp.isdigit() or len(otp) != 6:
         return jsonify({'error': 'Enter the six-digit password reset code.'}), 400
-    if len(new_password) < 12 or len(new_password.encode('utf-8')) > 72:
-        return jsonify({'error': 'Use a password of at least 12 characters and no more than 72 UTF-8 bytes.'}), 400
+    if not re.fullmatch(r'\d{6}', new_password):
+        return jsonify({'error': 'Set a 6-digit PIN (numbers only).'}), 400
 
     db = get_db()
     if db is None:
@@ -6152,11 +6152,11 @@ def change_password():
     current_password, new_password = data.get('current_password'), data.get('new_password')
     if not (isinstance(current_password, str) and isinstance(new_password, str) and current_password and new_password):
         return jsonify({'error': 'Enter your current password and a new password.'}), 400
-    # Same rule as a password reset; bcrypt only uses the first 72 bytes.
-    if len(new_password) < 12 or len(new_password.encode('utf-8')) > 72:
-        return jsonify({'error': 'Use a new password of at least 12 characters and no more than 72 UTF-8 bytes.'}), 400
+    # Same rule as registration: a 6-digit numeric PIN.
+    if not re.fullmatch(r'\d{6}', new_password):
+        return jsonify({'error': 'Set a 6-digit PIN (numbers only).'}), 400
     if new_password == current_password:
-        return jsonify({'error': 'Choose a password different from your current one.'}), 400
+        return jsonify({'error': 'Choose a PIN different from your current one.'}), 400
     user_id = request.user['user_id']
     db = get_db()
     user = db.users.find_one({'user_id': user_id}, {'password_hash': 1})
@@ -6403,7 +6403,7 @@ def seed_database():
         if not user:
             print("User not found! Creating new user...")
             user_id = str(uuid.uuid4())
-            pw_hash = bcrypt.hashpw("password".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            pw_hash = bcrypt.hashpw("123456".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             user = {
                 'user_id': user_id,
                 'name': 'Sai User',
@@ -6420,6 +6420,7 @@ def seed_database():
         # Demo profile: 1.5 months of spending in the bank, a budget the normal months stay within.
         db.users.update_one({'user_id': user_id}, {
             '$set': {'balance': 150000.00, 'is_verified': True, 'currency': 'INR', 'budget_limit': 90000.0,
+                     'password_hash': bcrypt.hashpw("123456".encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
                      'created_at': datetime.datetime.now() - timedelta(days=400)},
             '$unset': {'kyc_status': '', 'trust_score': '', 'security_status': '', 'fraud_risk_level': ''},
         })
@@ -6428,7 +6429,7 @@ def seed_database():
         db.transactions.delete_many({'user_id': user_id})
         transactions = _demo_transactions(user_id, datetime.datetime.now())
         db.transactions.insert_many(transactions)
-        print(f"Seeding complete: {len(transactions)} transactions. User 'sai@gmail.com' (password) ready.")
+        print(f"Seeding complete: {len(transactions)} transactions. User 'sai@gmail.com' (PIN 123456) ready.")
         
     except Exception as e:
         print(f"Seeding failed: {e}")

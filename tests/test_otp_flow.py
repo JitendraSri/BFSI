@@ -85,7 +85,7 @@ class OtpFlowTests(unittest.TestCase):
             response = self.client.post('/register', json={
                 'name': 'Test User',
                 'email': 'user@example.test',
-                'password': 'not-a-real-password',
+                'password': '123456',
                 'initial_balance': 0,
             })
 
@@ -227,7 +227,7 @@ class OtpFlowTests(unittest.TestCase):
         response = self.client.post('/reset-password', json={
             'email': email,
             'otp': '654321',
-            'new_password': 'a-long-new-password',
+            'new_password': '112233',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -249,7 +249,7 @@ class OtpFlowTests(unittest.TestCase):
         registration_code = self.client.post('/reset-password', json={
             'email': email,
             'otp': '123456',
-            'new_password': 'a-long-new-password',
+            'new_password': '112233',
         })
         self.assertEqual(registration_code.status_code, 400)
 
@@ -272,7 +272,7 @@ class OtpFlowTests(unittest.TestCase):
         response = self.client.post('/reset-password', json={
             'email': email,
             'otp': '654321',
-            'new_password': 'a-long-new-password',
+            'new_password': '112233',
         })
         self.assertEqual(response.status_code, 400)
         self.users.update_one.assert_not_called()

@@ -109,7 +109,7 @@ class HardeningTests(unittest.TestCase):
                 patch.object(application, 'send_otp_email', return_value=True):
             missing = self.client.post('/register', json={'email': 'a@b.co'})
             too_long = self.client.post('/register', json={'name': 'A', 'email': 'a@b.co', 'password': 'x' * 73})
-            created = self.client.post('/register', json={'name': 'A', 'email': ' Mixed@Example.COM ', 'password': 'long-enough'})
+            created = self.client.post('/register', json={'name': 'A', 'email': ' Mixed@Example.COM ', 'password': '123456'})
         self.assertEqual(missing.status_code, 400)
         self.assertEqual(too_long.status_code, 400)
         self.assertEqual(created.status_code, 201)
@@ -130,16 +130,16 @@ class HardeningTests(unittest.TestCase):
         database.users.find_one.return_value = {'password_hash': stored}
         with patch.object(application, 'get_db', return_value=database):
             wrong = self.client.post('/api/profile/password', headers=self.headers,
-                                     json={'current_password': 'nope', 'new_password': 'a-much-longer-password'})
+                                     json={'current_password': 'nope', 'new_password': '654321'})
             short = self.client.post('/api/profile/password', headers=self.headers,
                                      json={'current_password': 'old-password-123', 'new_password': 'short'})
             ok = self.client.post('/api/profile/password', headers=self.headers,
-                                  json={'current_password': 'old-password-123', 'new_password': 'a-much-longer-password'})
+                                  json={'current_password': 'old-password-123', 'new_password': '654321'})
         self.assertEqual(wrong.status_code, 400)
         self.assertEqual(short.status_code, 400)
         self.assertEqual(ok.status_code, 200)
         new_hash = database.users.update_one.call_args.args[1]['$set']['password_hash']
-        self.assertTrue(application.bcrypt.checkpw(b'a-much-longer-password', new_hash.encode()))
+        self.assertTrue(application.bcrypt.checkpw(b'654321', new_hash.encode()))
         self.assertEqual(database.users.update_one.call_count, 1)
 
     def test_investment_revaluation_is_owner_scoped_and_validated(self):

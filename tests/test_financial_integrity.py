@@ -49,9 +49,10 @@ class FinancialIntegrityTests(unittest.TestCase):
         page = response.get_data(as_text=True)
         self.assertIn('Transaction History', page)
         self.assertIn('/static/css/transactions.css', page)
-        self.assertIn('/static/js/transactions.js', page)
+        # Ledger logic is inlined into the page (loadTxns / exportCSV), not a separate JS file.
+        self.assertIn('async function loadTxns', page)
+        self.assertIn('function exportCSV', page)
         self.assertEqual(self.client.get('/static/css/transactions.css').status_code, 200)
-        self.assertEqual(self.client.get('/static/js/transactions.js').status_code, 200)
 
     def test_budget_page_is_removed_but_budget_api_remains_available(self):
         for path in ('/budget', '/budget.html'):

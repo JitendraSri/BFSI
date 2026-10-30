@@ -106,21 +106,21 @@
 
     <!-- Change Password -->
     <div class="glass card profile-card" style="max-width:500px; margin: 1.5rem auto;">
-      <h3 style="margin-bottom:1.5rem;">🔒 Change Password</h3>
+      <h3 style="margin-bottom:1.5rem;">🔒 Change PIN</h3>
       <div id="pwdMsg" class="mt-2" style="margin-bottom:0.5rem;"></div>
       <div class="form-group">
-        <label>Current Password</label>
-        <input type="password" id="currentPwd" placeholder="Enter current password">
+        <label>Current PIN</label>
+        <input type="password" id="currentPwd" placeholder="Current 6-digit PIN" maxlength="6" inputmode="numeric">
       </div>
       <div class="form-group">
-        <label>New Password</label>
-        <input type="password" id="newPwd" placeholder="Enter new password">
+        <label>New PIN</label>
+        <input type="password" id="newPwd" placeholder="New 6-digit PIN" maxlength="6" inputmode="numeric">
       </div>
       <div class="form-group">
-        <label>Confirm New Password</label>
-        <input type="password" id="confirmPwd" placeholder="Confirm new password">
+        <label>Confirm New PIN</label>
+        <input type="password" id="confirmPwd" placeholder="Re-enter new PIN" maxlength="6" inputmode="numeric">
       </div>
-      <button class="btn" style="width:100%;" onclick="changePassword()">Update Password</button>
+      <button class="btn" style="width:100%;" onclick="changePassword()">Update PIN</button>
     </div>
 
     <!-- Danger Zone -->
@@ -317,7 +317,8 @@
       const confirm = document.getElementById('confirmPwd').value;
       const msg = document.getElementById('pwdMsg');
       if (!current || !newPwd || !confirm) { msg.innerHTML = '<span style="color:#f39c12">Fill in all fields.</span>'; return; }
-      if (newPwd !== confirm) { msg.innerHTML = '<span style="color:#e74c3c">Passwords do not match.</span>'; return; }
+      if (!/^[0-9]{6}$/.test(newPwd)) { msg.innerHTML = '<span style="color:#e74c3c">PIN must be exactly 6 digits (numbers only).</span>'; return; }
+      if (newPwd !== confirm) { msg.innerHTML = '<span style="color:#e74c3c">PINs do not match.</span>'; return; }
       try {
         const res = await fetch(API_BASE + '/api/profile/change-password', {
           method: 'POST',
