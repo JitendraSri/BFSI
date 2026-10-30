@@ -18,6 +18,14 @@ uploads/
 # Report scratch/backup copies (git history is the backup)
 FINRAG_AI_Final_Project_Report_BACKUP.docx
 
+# Project documentation binaries kept out of the repo (root-level only;
+# functional sample files under static/samples/ are still tracked)
+/*.pdf
+/*.docx
+/*.doc
+/*.pptx
+/*.ppt
+
 # Byte-compiled / optimized / DLL files
 *.pyc
 *.pyd
