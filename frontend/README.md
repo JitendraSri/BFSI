@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FinRAG AI — Next.js Frontend
 
-## Getting Started
+A modern **Next.js 16 + React 19 + TypeScript** client for the FinRAG AI / BFSI Intelligence platform. It is an alternative single-page frontend to the server-rendered Jinja templates in the parent project, talking to the same Flask API over JWT-authenticated REST and Server-Sent Events.
 
-First, run the development server:
+> The Flask backend (`../app.py`) is the source of truth for all data and AI features. This app is purely a client — it ships no business logic of its own.
+
+## Stack
+
+| Concern | Choice |
+|---|---|
+| Framework | Next.js 16.4 (App Router) |
+| UI library | React 19.3 |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS v4 (`@tailwindcss/postcss`) |
+| Primitives | Radix UI (dialog, dropdown-menu, switch, tooltip) |
+| Icons | lucide-react |
+| Charts | Recharts 3 |
+| Theming | next-themes (light / dark) |
+| Class utils | class-variance-authority, clsx, tailwind-merge |
+
+## Getting started
+
+The backend must be running first (default `http://127.0.0.1:5000` — see the parent [README](../README.md)).
 
 ```bash
+# from this frontend/ directory
+npm install
+
+# point the client at the Flask API
+echo "NEXT_PUBLIC_API_URL=http://127.0.0.1:5000" > .env.local
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open **http://localhost:3000**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Script | Purpose |
+|---|---|
+| `npm run dev` | Development server with hot reload |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run lint` | ESLint (`eslint-config-next`) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Configuration
 
-## Learn More
+| Variable | Default | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `""` (same origin) | Base URL of the Flask backend. Set to `http://127.0.0.1:5000` in local dev |
 
-To learn more about Next.js, take a look at the following resources:
+## How it talks to the backend
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+All backend calls go through [`src/lib/api.ts`](src/lib/api.ts):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **`apiFetch<T>(path, options)`** — JSON fetch that attaches `Authorization: Bearer <token>` from `localStorage`, and on a `401` clears the token and redirects to `/login`.
+- **`apiStream(path, body, onStage, onToken, signal)`** — reads the FinRAG `text/event-stream`, dispatching `stage`, `token`, `done` and `error` events so answers render token-by-token with live stage labels. An `AbortSignal` cancels an in-flight answer.
 
-## Deploy on Vercel
+Authentication state is held in [`src/contexts/AuthContext.tsx`](src/contexts/AuthContext.tsx); the JWT lives in `localStorage` exactly as the Jinja app expects, so the two frontends are interchangeable against one backend.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Routes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Route | Page |
+|---|---|
+| `/` | Landing (redirects into the app) |
+| `/login`, `/register` | Authentication |
+| `/dashboard` | Metric cards and charts (Recharts) |
+| `/transactions` | Paginated, filterable ledger |
+| `/upload` | Transaction file import |
+| `/fraud-alerts` | Flagged-transaction investigation queue |
+| `/predictive` | Risk simulator and training history |
+| `/insights` | Model and FinRAG benchmark metrics |
+| `/investments` | Holdings and allocation |
+| `/loans` | EMI and affordability calculator |
+| `/credit-score` | Credit-score simulator |
+| `/rag` | FinRAG Copilot — streaming document Q&A |
+| `/profile` | Account settings |
+
+Shared chrome lives in [`src/components/layout/`](src/components/layout/) (`AppLayout`, `Sidebar`, `Topbar`).
+
+## Project layout
+
+```
+frontend/
+├── src/
+│   ├── app/              # App Router pages (one folder per route)
+│   ├── components/layout/ # AppLayout, Sidebar, Topbar
+│   ├── contexts/         # AuthContext (JWT + current user)
+│   └── lib/              # api.ts (fetch + SSE), utils.ts
+├── public/               # static SVGs
+├── next.config.ts
+├── tailwind.config.ts
+└── tsconfig.json
+```
+
+`node_modules/`, `.next/` and `out/` are git-ignored build artifacts and are not committed.

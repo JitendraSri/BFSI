@@ -1,143 +1,99 @@
 # FinRAG AI: Project Guide & Technical Architecture
 
-Welcome to **FinRAG AI — Integrated Financial Intelligence Platform**. The project brings transaction-risk review and financial-document question answering into one workspace, while retaining the existing financial-planning modules.
+Welcome to **FinRAG AI — A Unified AI Framework for Financial Risk and Retrieval-Augmented Intelligence**. The platform brings transaction-risk review and financial-document question answering into one workspace, alongside financial-planning tools.
+
+> This is a high-level guide. The authoritative, deep-dive reference is the main [README](README.md) — it carries the exact algorithms, configuration, measured benchmark numbers and API contract.
 
 ## Current Build Baseline
 
-The shipped implementation preserves the existing Vanilla HTML/CSS/JavaScript frontend, Flask API, MongoDB storage, Scikit-learn fraud model, and Google Gemini integrations. Its bundled data includes 5,000 labeled transaction records (4,568 non-fraud and 432 fraud) and 48 financial-report documents.
+The platform runs on a **Flask** API with **MongoDB Atlas** storage, a **scikit-learn** Transaction Intelligence engine, and **Google Gemini** for generation and embeddings. The default UI is server-rendered (Jinja templates + vanilla JS + Chart.js); an **optional Next.js + React + TypeScript client** lives in [`frontend/`](frontend/) and talks to the same API. Bundled data includes ~10,000 labeled transaction records (≈2% fraud) and 48 financial-report documents.
 
-The current document-answering path extracts searchable text, chunks it with source/page metadata, ranks passages using TF-IDF and BM25 reciprocal-rank fusion, and asks Gemini to answer from those passages with source citations. PDF citations include page numbers where available; HTML report citations identify the source document. The RAG workspace also supports normal Gemini conversation when no document is selected or no relevant passage matches, with recent chat context for follow-up questions; these responses are identified as general AI answers rather than document-grounded evidence.
+The FinRAG document-answering path implements the metadata-driven RAG architecture of Dadopoulos et al., *Metadata-Driven Retrieval-Augmented Generation for Financial Question Answering* (arXiv:2510.24402, 2025), extended with table-aware chunking, LLM document/chunk metadata, contextual-chunk embeddings, **hybrid dense + BM25 + TF-IDF retrieval fused with reciprocal-rank fusion**, a metadata reranker, query rewriting + HyDE + multi-hop decomposition, page/section/table citations, and a numeric grounding (hallucination) check. When no Gemini key is configured, FinRAG degrades gracefully to sparse (BM25 + TF-IDF) retrieval with rule-based metadata.
 
-Dense embeddings, metadata-aware filtering, table-preserving extraction, cross-encoder reranking, and multi-hop evidence chaining are research extensions in the supplied project materials, not capabilities claimed by this build. Model flags and imported fraud labels are investigation signals, not confirmed fraud findings. Model scores are not calibrated probabilities.
+Model flags and imported fraud labels are investigation signals, not confirmed fraud findings, and model scores are review signals rather than calibrated probabilities. The system scores, ranks and explains; a person decides.
 
 ---
 
-## 🛠️ Complete Technology Stack
+## 🛠️ Technology Stack
 
-The platform is built on a highly optimized, modern technology stack designed for performance, security, and scalability.
+### Frontend
+*   **Default UI**: Server-rendered **Jinja** templates with **vanilla HTML5/CSS3/ES6+ JavaScript** and **Chart.js**. No build step; a glassmorphism enterprise theme with hardware-accelerated animations.
+*   **Optional SPA**: **Next.js 16 + React 19 + TypeScript** client in [`frontend/`](frontend/) — Tailwind CSS v4, Radix UI primitives, Recharts, next-themes. It consumes the Flask API over JWT + Server-Sent Events. See [frontend/README.md](frontend/README.md).
 
-### Frontend Architecture (Client-Side)
-*   **Core Structure**: Semantic **HTML5**.
-*   **Styling**: **Modern Vanilla CSS3**. We intentionally avoided frameworks like React, Tailwind, or Bootstrap to ensure zero bloat and maximum rendering performance.
-*   **Design System**: Premium Enterprise SaaS UI featuring Glassmorphism, 3D CSS parallax effects, animated mesh gradients (`#050816` deep navy theme), and hardware-accelerated 60 FPS CSS animations.
-*   **Interactivity**: **Vanilla JavaScript (ES6+)**. Utilizes modern browser APIs like `IntersectionObserver` for scroll animations, custom event listeners for interactive 3D mock dashboards, and the `Fetch API` for asynchronous backend communication.
+### Backend
+*   **Language**: **Python 3.12**.
+*   **Framework**: **Flask 3** (routes, ML and the FinRAG engine all live in `app.py`).
+*   **Database**: **MongoDB (Atlas Cloud)** — users, transactions, uploads, investments, loans, RAG conversations.
+*   **Security & Auth**: **bcrypt** password hashing, **JWT** (HS256, 24h expiry), email **OTP** verification over SMTP (Brevo relay), per-IP rate limiting.
 
-### Backend Architecture (Server-Side)
-*   **Language**: **Python 3.x**.
-*   **Framework**: **Flask** (Micro-framework chosen for lightweight, fast API routing).
-*   **Database**: **MongoDB (Atlas Cloud)**. A NoSQL database used for storing unstructured user data, transaction logs, and dynamic risk scores.
-*   **Security & Auth**: Custom session/JWT management. Email-based **OTP (One-Time Password) Verification** powered by SMTP.
-
-### AI & Machine Learning Stack
-*   **Machine Learning**: **Scikit-Learn** (Algorithms, Metrics), **Pandas** (Data manipulation), **NumPy** (Numerical operations), **Joblib** (Model serialization).
-*   **Generative AI**: **Google Gemini API**. Integrated through the existing service for document parsing, transaction explanations, portfolio analysis, and document-grounded question answering.
+### AI & Machine Learning
+*   **ML**: **scikit-learn** (Random Forest, Isolation Forest, TF-IDF), **Pandas**, **NumPy**, **Joblib**.
+*   **Generative AI**: **Google Gemini** via the `google-genai` SDK — `gemini-flash-lite-latest` for generation and `gemini-embedding-001` (768-dim) for dense retrieval. One shared, cached client with retry/backoff.
+*   **Vector index**: an embedded exact-cosine NumPy index per document (no separate vector-DB server; Qdrant is the drop-in upgrade for large corpora).
 
 ---
 
 ## 🧠 Core Algorithms & Intelligence Models
 
-The FinRAG AI platform combines transaction-risk scoring, document parsing and retrieval, and account-level financial heuristics:
+### 1. Transaction Intelligence (Random Forest + Isolation Forest)
+*   **Supervised Random Forest** (200 trees, depth 10, `balanced_subsample`) learns labeled fraud patterns over amount, channel, account age and KYC status.
+*   **Unsupervised Isolation Forest**, trained only on non-fraud rows, flags unusual behaviour even where no label exists.
+*   **Hybrid risk score (0–100)** = 75% Random Forest probability + 25% anomaly score, banded High / Medium / Low, each with plain-language **reason codes** ("Amount is 85× this customer's typical transaction", "Account is less than 30 days old", "KYC not verified").
+*   **Learned threshold**: the alert threshold maximises fraud-class F1 on cross-validated training folds (≈0.60) rather than a fixed 0.5. Metrics (ROC-AUC, PR-AUC, fraud-class precision/recall/F1, false-positive rate, detection latency) are **measured on held-out data** and shown live on the Insights page.
 
-### 1. The Fraud Detection Algorithm (Random Forest)
-At the heart of the platform is a supervised machine learning model built using the **RandomForestClassifier**.
-*   **How it works**: It operates as an ensemble of numerous decision trees. Each tree makes a prediction on whether a transaction is fraudulent based on historical data. The forest then "votes" on the final outcome, drastically reducing overfitting compared to a single decision tree.
-*   **Features Analyzed**: Transaction amount, payment channel, account age, and KYC status. The bundled labeled dataset uses Mobile, POS, ATM, and Web channel values.
-*   **Output**: It returns an uncalibrated model score used as a review signal. Displayed risk bands are not verified fraud findings.
-*   **Evaluation**: The bundled dataset is imbalanced, so class-level precision, recall, and F1 should be reviewed alongside overall accuracy.
+### 2. Generative Parsing Pipeline (Gemini)
+Uploaded receipts (images) and bank statements (PDFs) are sent to the Gemini multimodal model under strict prompt constraints, which returns structured JSON (summary, risk percentage, transaction rows) for review before import.
 
-### 2. Generative OCR & Parsing Pipeline (Gemini)
-When users upload receipts (Images) or Bank Statements (PDFs), traditional OCR often fails at extracting relational data. 
-*   **How it works**: We pass the raw document securely to the **Google Gemini multimodal LLM**. By using highly engineered prompt constraints, the LLM acts as an intelligent parser, extracting dates, merchants, and amounts, and structuring them strictly into machine-readable JSON format for our database.
+### 3. Financial Document RAG (FinRAG)
+*   **Indexing**: structure-preserving parse → section- and table-aware chunks (each table is its own chunk, with caption and units) → rule-based entities (instantly searchable) → background Gemini document/chunk metadata → contextual-chunk embeddings.
+*   **Retrieval**: every query variant is searched with BM25, TF-IDF and dense cosine similarity; ranked lists are merged with **reciprocal-rank fusion**, then a **metadata reranker** (entity/cluster/query/retrieval signals) picks the top 7.
+*   **Query understanding**: one Gemini call produces the whole plan — query rewriting, a HyDE passage, and up to 3 multi-hop sub-questions.
+*   **Grounded answers**: Gemini answers only from the retrieved excerpts, cites every statement `[n]` with page/section/table and units, and a **numeric grounding check** lists any figure that doesn't appear verbatim in the cited passages. Each answer carries a confidence score and related questions.
+*   **Live ingestion**: SEC EDGAR by ticker and any public annual report by URL (BSE/NSE or company site), with SSRF protection. Each user's library is isolated on disk.
 
-### 3. Financial Document Retrieval-Augmented Generation
-The private FinRAG workspace indexes PDFs, HTML, Markdown, and text documents, as well as the bundled financial-report catalog.
-*   **Retrieval**: Document chunks are ranked with TF-IDF and BM25, then combined using reciprocal-rank fusion. This is lexical retrieval; the current build does not use dense embeddings or a vector database.
-*   **Grounded answers**: Gemini receives the top matching excerpts and is instructed to answer only from those excerpts, cite the provided source numbers, and say when the evidence does not contain the answer.
-*   **Traceability**: Retrieved passages retain their source name and PDF page number when available. Each user's indexed documents are stored in an isolated directory.
-*   **Conversational mode**: Users can chat without selecting a document, ask everyday questions, and ask follow-ups. Responses are labeled as general AI answers when no evidence was retrieved.
-
-### 4. Dynamic Trust Scoring Heuristic
-Every user is assigned a Trust Score (0-100).
-*   **How it works**: A deterministic weighted heuristic uses KYC state, flagged-record ratio, recent activity, account age, and balance tiers. It is a profile indicator—not a credit score or validated measure of trust.
+### 4. Dynamic Trust-Scoring Heuristic
+A deterministic 0–100 profile indicator from KYC state, flagged-record ratio, recent activity, account age and balance tier. It is a profile signal, not a credit score or validated measure of trust.
 
 ---
 
 ## 🚀 Platform Features & User Guide
 
-### 1. The Entry Point
-*   **Visuals**: Features a CSS-only 3D mock dashboard, live particle nodes, glowing network connections, and responsive typography.
-*   **Action**: Create an account or sign in to open the authenticated workspace.
+### 1. Authentication & Security
+*   Register with email + password; verify with a 6-digit email **OTP** (10-minute validity, 60-second resend cooldown, 5/hour). Password reset uses a separate OTP. Sessions are JWT-based and expire after 24 hours.
 
-### 2. 🔐 Authentication & Security
-*   **Registration**: Sign up with email and password.
-*   **OTP Verification**: Receive a 6-digit OTP via email to verify identity during sign-up or password resets.
-*   **Session Management**: Secure, timeout-based sessions that require re-authentication for sensitive actions.
+### 2. The Hub: Unified Dashboard
+*   Profile and security indicators, transaction and flagged-record counts; charts for transaction volume, income vs expense, spending categories, fraud trend and next-month forecast; a subscription detector and a month-over-month spend insight; recent alerts; a multi-currency switcher. Everything is scoped to the signed-in user.
 
-### 3. 📊 The Hub: Unified Dashboard
-Your central cockpit for financial monitoring.
-*   **Metrics**: Account profile indicators, transaction counts, and flagged-record counts.
-*   **Visualizations**: Transaction volume, income vs. expense, categories, flagged-record trends, and available forecasts.
-*   **Live Feed**: Recent activity for the signed-in user. Model flags and uploaded labels remain review signals.
+### 3. Data Ingestion
+*   Import from **CSV, Excel, PDF or images**. Indian bank-statement column aliases, comma amounts and day-first dates are handled. Preview valid/rejected/duplicate rows (download rejected rows as CSV, remap columns if headers aren't recognised), then confirm — or roll back the whole batch later.
 
-### 4. 📥 Data Ingestion
-*   **CSV/Excel**: Bulk upload historical bank statements.
-*   **AI Document Analysis**: Upload supported statement/image documents through the existing Gemini parsing pipeline and review the transaction preview before confirming an import.
+### 4. Alerts & Investigation
+*   A review queue of flagged transactions, each with a 0–100 risk score, level and reasons. Mark **Legitimate / Fraud / Reopen** with undo; those labels feed the next retrain. Request a Gemini explanation, and carry transaction context into the FinRAG workspace to compare against report evidence.
 
-### 5. 🛡️ Alerts & Investigation
-*   **Review queue**: Inspect records carrying a fraud label or model flag without presenting either as a confirmed finding.
-*   **AI explanation**: Request an explanation through the existing Gemini integration.
-*   **Evidence handoff**: Carry transaction context into the FinRAG workspace, select a report, and compare the answer with its retrieved source passages.
+### 5. Predictive Simulator & Insights
+*   Score a hypothetical transaction (fraud score, anomaly score, hybrid risk, reasons). The Insights page shows measured model metrics, a model-drift chart across retrains, and FinRAG benchmark results. Retraining can be restricted to admins via `ADMIN_EMAILS`.
 
-### 6. 🔮 Predictive Simulator
-*   **Transaction Simulator**: Manually input transaction parameters (amount, channel, account age, KYC state) to query the Random Forest model. Its output is an uncalibrated score, not an exact probability or confirmed fraud decision.
-*   **Model Insights**: View the backend ML metrics (Accuracy, Precision, Recall) directly in the UI.
+### 6. Wealth, Planning & Credit
+*   Track holdings with per-holding returns and an allocation chart, plus an AI portfolio-rebalancing review. Loan EMI and affordability calculators (with a year-by-year amortization + prepayment chart) and a credit-score simulator that starts from a real baseline derived from account history.
 
-### 7. 💰 Wealth & Portfolio Management
-*   **Tracking**: Aggregate Stocks, Mutual Funds, Gold, Real Estate, and Crypto.
-*   **Cortex Advisor**: Trigger the Gemini AI to analyze your current asset distribution and provide personalized diversification strategies.
-
-### 8. 🧮 Financial Planning Tools
-*   **Calculators**: Interactive Loan EMI calculators and Eligibility Checkers.
-*   **Credit Simulation**: Model how specific financial actions impact your credit worthiness over time.
-*   The budget page has been removed from the website navigation and routes; its existing API endpoints are retained.
-
-### 9. 📚 FinRAG Workspace
-*   **Sources**: Index private PDFs, HTML, Markdown, and text documents, or choose a bundled financial report.
-*   **Retrieval**: Combine TF-IDF and BM25 rankings with reciprocal-rank fusion, then send the strongest passages to Gemini.
-*   **Evidence**: Review the returned source citations and page numbers where available. A flagged transaction can be carried into this workspace as analyst context.
+### 7. FinRAG Copilot
+*   The flagship feature. A streaming three-pane chat (sources, conversation, evidence drawer). Add sources by upload, from 48 bundled 10-Ks, by SEC ticker, or by annual-report URL. Chat with one document, all documents, or Gemini alone. Answers stream token-by-token with live stage labels; inline `[n]` citations open the exact passage; conversations are saved server-side.
 
 ---
 
 ## 🔌 API Reference
 
-### 🔐 Authentication & Identity
-*   `POST /register`: Create a new user account.
-*   `POST /login`: Authenticate and initialize session.
-*   `POST /resend-registration-otp`: Request another registration OTP.
-*   `POST /verify-registration`: Validate email via OTP.
-*   `POST /forgot-password` & `POST /reset-password`: OTP-based credential recovery.
-*   `GET /api/profile` & `PUT /api/profile`: Retrieve or update the signed-in user's profile.
-
-### 📥 Data & Transactions
-*   `POST /upload`: Preview CSV/Excel imports or supported Gemini-parsed documents.
-*   `POST /upload/map`, `/upload/confirm`, `/upload/rollback`: Map fields, commit an import, or roll it back.
-*   `GET /api/transactions` & `DELETE /api/transactions/<id>`: List or delete the signed-in user's records.
-*   `GET /api/alerts`: Retrieve records carrying a fraud label or model flag.
-
-### 🧠 AI & Analytics
-*   `POST /api/predict` & `POST /api/retrain`: Run inference or retrain the existing model.
-*   `GET /api/metrics` & `GET /api/model-tips`: Retrieve model metrics and improvement guidance.
-*   `POST /api/analyze` & `POST /api/chat`: Request a transaction explanation or advisor response.
-*   `GET /api/rag/documents`, `GET /api/rag/catalog`, `POST /api/rag/index`, and `POST /api/rag/ask`: Manage sources and ask document-grounded questions.
-
-### 💰 Financial Modules
-*   `GET/POST /api/investments` and `POST /api/investments/analyze`: Manage and review the user-entered portfolio.
-*   `POST /api/loan/emi`, `/api/check-loan-eligibility`, and `/api/loan/apply`: Run loan planning actions.
-*   `GET/POST /api/credit-score`: Use the existing credit simulation module.
-*   `GET /api/budget-data` and `POST /api/update-budget`: Existing endpoints retained for compatibility; the budget page is not available in the website.
-
-### ⚙️ System Tools
-*   `GET /test-atlas` & `GET /test_db`: Database health and connectivity checks.
+The full, current endpoint list — authentication, transactions/import, ML & AI, FinRAG, and finance tools — is maintained in the main [README API reference](README.md#api-reference). All `/api/*` and `/upload*` routes require `Authorization: Bearer <JWT>` and are scoped to the token's user.
 
 ---
-*© 2026 BFSI Intelligence Platform - Built with purely Vanilla Web Technologies and cutting-edge AI.*
+
+## ✅ Testing
+
+```bash
+python -m pytest -q
+```
+
+The pytest suite runs with MongoDB and Gemini mocked, so it needs no network access or credentials. It covers the OTP flow, upload pipeline, FinRAG parsing/retrieval/security, and the Transaction Intelligence detectors. See the [README testing section](README.md#testing) for the per-file breakdown.
+
+---
+*© 2026 FinRAG AI — BFSI Intelligence Platform. Decision support, not automated decisions.*

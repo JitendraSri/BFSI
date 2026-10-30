@@ -389,7 +389,8 @@ Status of every item in the abstract, the basic-data sheet and the Review-1 note
 | ROC-AUC, PR-AUC, FPR, detection latency | Implemented and measured | Insights page and `assets/models/metrics.json` |
 | RAG metrics: Recall@k, MRR, nDCG, claim recall, context precision, F1, faithfulness, hallucination | Implemented and measured | FinRAG evaluation section of `app.py`, run via `python app.py evaluate-rag` |
 | Unified dashboard: transaction risk + document evidence | Implemented | Fraud Alerts → "Investigate with report evidence" opens FinRAG with the transaction context |
-| React + TypeScript frontend, FastAPI backend | Not adopted | The working Flask + Jinja app was kept; a rewrite would have put every working feature at risk for no functional gain |
+| React + TypeScript frontend | Added (optional) | A **Next.js 16 + React 19 + TypeScript** client lives in [`frontend/`](frontend/), talking to the same Flask API over JWT + SSE. It is an alternative to the Jinja UI, not a replacement — the server-rendered app remains the default. See [frontend/README.md](frontend/README.md) |
+| FastAPI backend | Not adopted | The working Flask backend was kept; a rewrite would have put every working feature at risk for no functional gain |
 | Docker, CI/CD, cloud deployment, Prometheus/Grafana | Not done | Docker isn't installed on the development machine, so a container couldn't be tested here |
 
 ---
@@ -508,8 +509,18 @@ BFSI_Project/
 │   ├── private_kyc_documents/   # KYC photos (git-ignored, never served)
 │   └── logs/app.log
 ├── uploads/profiles/      # Profile photos (served at /uploads/…)
+├── frontend/              # Optional Next.js + React + TypeScript client (talks to the Flask API)
 └── tests/                 # pytest suite
 ```
+
+### Two frontends, one backend
+
+The backend serves both UIs from the same JWT-authenticated API:
+
+- **Jinja app (default):** server-rendered pages in `templates/` + vanilla JS in `static/js/`, served by Flask at `http://127.0.0.1:5000`. No build step.
+- **Next.js app (optional):** [`frontend/`](frontend/) — a React 19 / TypeScript single-page client (Tailwind v4, Radix UI, Recharts) that calls the Flask API via `NEXT_PUBLIC_API_URL` and renders the FinRAG Copilot with the same token-by-token SSE streaming. Run it alongside the backend with `npm run dev` (port 3000); see [frontend/README.md](frontend/README.md).
+
+Both store the JWT in `localStorage` the same way, so they are interchangeable against one running backend.
 
 ---
 
