@@ -12,6 +12,12 @@ venv/
 assets/rag_documents/
 assets/private_kyc_documents/
 
+# User-uploaded data (profile photos, statements, etc.)
+uploads/
+
+# Report scratch/backup copies (git history is the backup)
+FINRAG_AI_Final_Project_Report_BACKUP.docx
+
 # Byte-compiled / optimized / DLL files
 *.pyc
 *.pyd
