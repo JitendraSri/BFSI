@@ -6150,6 +6150,7 @@ def update_profile():
         return jsonify({'error': 'Failed to update profile', 'detail': str(e)}), 500
 
 @app.route('/api/profile/password', methods=['POST'])
+@app.route('/api/profile/change-password', methods=['POST'])
 @auth_required
 @limiter.limit("5 per hour")
 def change_password():
