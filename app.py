@@ -2771,7 +2771,10 @@ if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY must be set in environment. Refusing to start with default secret.")
 MONGO_URI = os.getenv('MONGO_URI')
 
-# SMTP Configuration
+# Email Configuration
+RESEND_API_KEY = (os.getenv("RESEND_API_KEY") or "").strip() or None
+
+# SMTP Configuration (fallback if Resend not configured)
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp-relay.brevo.com").strip()
 try:
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587").strip())
@@ -2852,7 +2855,32 @@ def _otp_digest(email, otp):
 
 
 def _send_email(to_email, subject, html_body):
-    """Shared SMTP delivery for OTPs, fraud alerts, etc. Returns True on success."""
+    """Send email via Resend API (preferred) or SMTP fallback. Returns True on success."""
+    if RESEND_API_KEY:
+        return _send_email_resend(to_email, subject, html_body)
+    return _send_email_smtp(to_email, subject, html_body)
+
+
+def _send_email_resend(to_email, subject, html_body):
+    """Send via Resend HTTP API — works on Render free tier (no SMTP port blocking)."""
+    try:
+        import resend as resend_sdk
+        resend_sdk.api_key = RESEND_API_KEY
+        resend_sdk.Emails.send({
+            "from": "FinRAG AI <onboarding@resend.dev>",
+            "to": [to_email],
+            "subject": subject,
+            "html": html_body,
+        })
+        logger.info("Email sent via Resend (%s)", subject)
+        return True
+    except Exception as e:
+        logger.error("Resend email failed — %s: %s", type(e).__name__, e)
+        return False
+
+
+def _send_email_smtp(to_email, subject, html_body):
+    """SMTP fallback delivery."""
     configuration_errors = validate_smtp_config()
     if configuration_errors:
         logger.error("Email configuration invalid: %s", ", ".join(configuration_errors))
@@ -2875,10 +2903,10 @@ def _send_email(to_email, subject, html_body):
             server.login(SMTP_LOGIN, SMTP_PASSWORD)
             stage = "message delivery"
             server.send_message(msg)
-        logger.info("Email sent successfully (%s)", subject)
+        logger.info("Email sent via SMTP (%s)", subject)
         return True
     except Exception as e:
-        logger.error("Email delivery failed during %s — %s: %s", stage, type(e).__name__, e)
+        logger.error("SMTP email failed during %s — %s: %s", stage, type(e).__name__, e)
         return False
 
 
@@ -5954,31 +5982,21 @@ def parse_money(value, field='amount', allow_zero=False):
 
 @app.route('/api/smtp-status', methods=['GET'])
 def smtp_status():
-    """Public diagnostic — shows SMTP config and tests connection (no secrets exposed)."""
-    errors = validate_smtp_config()
-    result = {
-        "SMTP_SERVER": SMTP_SERVER,
-        "SMTP_PORT": SMTP_PORT,
-        "SMTP_LOGIN_SET": bool(SMTP_LOGIN),
-        "SMTP_PASSWORD_SET": bool(SMTP_PASSWORD),
-        "SENDER_EMAIL": SENDER_EMAIL,
-        "validation_errors": errors,
-        "valid": len(errors) == 0,
-    }
-    if not errors:
-        stage = "connect"
-        try:
-            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as srv:
-                srv.ehlo()
-                stage = "starttls"
-                srv.starttls()
-                srv.ehlo()
-                stage = "login"
-                srv.login(SMTP_LOGIN, SMTP_PASSWORD)
-                stage = "done"
-            result["connection_test"] = "passed"
-        except Exception as e:
-            result["connection_test"] = f"failed at {stage}: {type(e).__name__}: {e}"
+    """Public diagnostic — shows email config (no secrets exposed)."""
+    result = {"resend_configured": bool(RESEND_API_KEY)}
+    if RESEND_API_KEY:
+        result["email_backend"] = "resend"
+        result["resend_key_prefix"] = RESEND_API_KEY[:8] + "..."
+    else:
+        errors = validate_smtp_config()
+        result["email_backend"] = "smtp"
+        result["SMTP_SERVER"] = SMTP_SERVER
+        result["SMTP_PORT"] = SMTP_PORT
+        result["SMTP_LOGIN_SET"] = bool(SMTP_LOGIN)
+        result["SMTP_PASSWORD_SET"] = bool(SMTP_PASSWORD)
+        result["SENDER_EMAIL"] = SENDER_EMAIL
+        result["validation_errors"] = errors
+        result["valid"] = len(errors) == 0
     return jsonify(result)
 
 
