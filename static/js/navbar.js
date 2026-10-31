@@ -125,9 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
     const path = window.location.pathname;
 
-    // Only hide sidebar on auth page and landing page
+    // Only hide sidebar on auth/landing pages
     const isLandingPage = path === '/' || path.endsWith('/index.html') || path === '';
-    if (path.includes('auth.html') || isLandingPage) {
+    const isAuthPage = path.includes('auth.html') || path === '/login' || path === '/register' || path === '/forgot-password';
+    if (isAuthPage || isLandingPage) {
         document.body.style.paddingLeft = '0';
         return;
     }
