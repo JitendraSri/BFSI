@@ -5954,18 +5954,32 @@ def parse_money(value, field='amount', allow_zero=False):
 
 @app.route('/api/smtp-status', methods=['GET'])
 def smtp_status():
-    """Public diagnostic — shows SMTP config (no secrets) and validation errors."""
+    """Public diagnostic — shows SMTP config and tests connection (no secrets exposed)."""
     errors = validate_smtp_config()
-    return jsonify({
+    result = {
         "SMTP_SERVER": SMTP_SERVER,
         "SMTP_PORT": SMTP_PORT,
         "SMTP_LOGIN_SET": bool(SMTP_LOGIN),
         "SMTP_PASSWORD_SET": bool(SMTP_PASSWORD),
-        "SENDER_EMAIL_SET": bool(SENDER_EMAIL),
         "SENDER_EMAIL": SENDER_EMAIL,
         "validation_errors": errors,
         "valid": len(errors) == 0,
-    })
+    }
+    if not errors:
+        stage = "connect"
+        try:
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as srv:
+                srv.ehlo()
+                stage = "starttls"
+                srv.starttls()
+                srv.ehlo()
+                stage = "login"
+                srv.login(SMTP_LOGIN, SMTP_PASSWORD)
+                stage = "done"
+            result["connection_test"] = "passed"
+        except Exception as e:
+            result["connection_test"] = f"failed at {stage}: {type(e).__name__}: {e}"
+    return jsonify(result)
 
 
 @app.route('/api/test-smtp', methods=['POST'])
