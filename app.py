@@ -2785,10 +2785,6 @@ SMTP_PASSWORD = (os.getenv("SMTP_PASSWORD") or "").strip() or None
 SENDER_EMAIL = (os.getenv("SENDER_EMAIL") or "").strip() or None
 JWT_TTL_HOURS = int(os.getenv('JWT_TTL_HOURS', '24'))
 
-# Google OAuth
-GOOGLE_CLIENT_ID = (os.getenv("GOOGLE_CLIENT_ID") or "").strip() or None
-GOOGLE_CLIENT_SECRET = (os.getenv("GOOGLE_CLIENT_SECRET") or "").strip() or None
-GOOGLE_REDIRECT_URI = (os.getenv("GOOGLE_REDIRECT_URI") or "").strip() or "http://localhost:5000/auth/google/callback"
 # Retraining replaces the fraud model every user is scored with, so it can be limited to named
 # administrators. Unset = single-owner mode: any signed-in user may retrain.
 ADMIN_EMAILS = {email.strip().casefold() for email in os.getenv('ADMIN_EMAILS', '').split(',') if email.strip()}
@@ -3310,117 +3306,6 @@ def log_request(response):
 # ==========================================
 # PAGE ROUTES
 # ==========================================
-
-@app.route('/auth/google')
-def google_oauth_start():
-    if not GOOGLE_CLIENT_ID:
-        return jsonify({'error': 'Google OAuth not configured'}), 503
-    import urllib.parse
-    state = jwt.encode(
-        {'nonce': secrets.token_hex(16), 'exp': int(time.time()) + 600},
-        SECRET_KEY, algorithm='HS256'
-    )
-    params = {
-        'client_id': GOOGLE_CLIENT_ID,
-        'redirect_uri': GOOGLE_REDIRECT_URI,
-        'response_type': 'code',
-        'scope': 'openid email profile',
-        'state': state,
-        'access_type': 'online',
-        'prompt': 'select_account',
-    }
-    return redirect('https://accounts.google.com/o/oauth2/v2/auth?' + urllib.parse.urlencode(params))
-
-
-@app.route('/auth/google/callback')
-def google_oauth_callback():
-    import urllib.parse, requests as http
-    error = request.args.get('error')
-    if error:
-        return redirect('/login?oauth_error=' + urllib.parse.quote(error))
-
-    state = request.args.get('state', '')
-    try:
-        jwt.decode(state, SECRET_KEY, algorithms=['HS256'])
-    except Exception:
-        return redirect('/login?oauth_error=invalid_state')
-
-    code = request.args.get('code')
-    if not code:
-        return redirect('/login?oauth_error=no_code')
-
-    # Exchange code for tokens
-    token_resp = http.post('https://oauth2.googleapis.com/token', data={
-        'code': code,
-        'client_id': GOOGLE_CLIENT_ID,
-        'client_secret': GOOGLE_CLIENT_SECRET,
-        'redirect_uri': GOOGLE_REDIRECT_URI,
-        'grant_type': 'authorization_code',
-    }, timeout=10)
-    if not token_resp.ok:
-        return redirect('/login?oauth_error=token_exchange_failed')
-
-    access_token = token_resp.json().get('access_token')
-    userinfo_resp = http.get('https://www.googleapis.com/oauth2/v3/userinfo',
-                             headers={'Authorization': f'Bearer {access_token}'}, timeout=10)
-    if not userinfo_resp.ok:
-        return redirect('/login?oauth_error=userinfo_failed')
-
-    info = userinfo_resp.json()
-    email = (info.get('email') or '').strip().casefold()
-    name = (info.get('name') or email.split('@')[0]).strip()
-    google_id = info.get('sub', '')
-
-    if not email or not google_id:
-        return redirect('/login?oauth_error=missing_info')
-
-    db = get_db()
-    if db is None:
-        return redirect('/login?oauth_error=db_unavailable')
-
-    user = find_user_by_email(db, email)
-    if user:
-        # Link Google ID and mark verified if not already
-        updates = {'is_verified': True}
-        if not user.get('google_id'):
-            updates['google_id'] = google_id
-        db.users.update_one({'user_id': user['user_id']}, {'$set': updates})
-        user = find_user_by_email(db, email)
-    else:
-        # Create new account (random PIN — user can change it from profile)
-        user_id = str(uuid.uuid4())
-        random_pin = f"{secrets.randbelow(1_000_000):06d}"
-        pin_hash = bcrypt.hashpw(random_pin.encode(), bcrypt.gensalt()).decode()
-        user = {
-            'user_id': user_id,
-            'name': name,
-            'email': email,
-            'password_hash': pin_hash,
-            'balance': 0.0,
-            'currency': 'INR',
-            'created_at': datetime.datetime.now(),
-            'is_verified': True,
-            'google_id': google_id,
-        }
-        db.users.insert_one(user)
-
-    issued_at = int(time.time())
-    token = jwt.encode(
-        {'user_id': user['user_id'], 'email': email,
-         'iat': issued_at, 'exp': issued_at + JWT_TTL_HOURS * 3600},
-        SECRET_KEY, algorithm='HS256'
-    )
-
-    # Render a tiny page that stores the token and redirects to dashboard
-    html = f"""<!doctype html><html><head><title>Signing in…</title></head><body>
-<script>
-  localStorage.setItem('token', {repr(token)});
-  window.location.replace('/dashboard');
-</script>
-<p>Signing you in…</p>
-</body></html>"""
-    return html
-
 
 @app.route('/')
 def index():
