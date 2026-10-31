@@ -320,7 +320,7 @@
       if (!/^[0-9]{6}$/.test(newPwd)) { msg.innerHTML = '<span style="color:#e74c3c">PIN must be exactly 6 digits (numbers only).</span>'; return; }
       if (newPwd !== confirm) { msg.innerHTML = '<span style="color:#e74c3c">PINs do not match.</span>'; return; }
       try {
-        const res = await fetch(API_BASE + '/api/profile/change-password', {
+        const res = await fetch(API_BASE + '/api/profile/password', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
           body: JSON.stringify({ current_password: current, new_password: newPwd })
