@@ -2835,8 +2835,9 @@ def safe_name(value):
 def validate_smtp_config(server=SMTP_SERVER, port=SMTP_PORT, login=SMTP_LOGIN,
                          password=SMTP_PASSWORD, sender=SENDER_EMAIL):
     errors = []
-    if server != "smtp-relay.brevo.com":
-        errors.append("SMTP_SERVER must be smtp-relay.brevo.com")
+    allowed_servers = {"smtp-relay.brevo.com", "smtp.gmail.com", "smtp.office365.com"}
+    if server not in allowed_servers:
+        errors.append(f"SMTP_SERVER must be one of: {', '.join(sorted(allowed_servers))}")
     if port != 587:
         errors.append("SMTP_PORT must be 587")
     for name, value in (("SMTP_LOGIN", login), ("SMTP_PASSWORD", password), ("SENDER_EMAIL", sender)):
