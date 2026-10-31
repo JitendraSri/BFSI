@@ -2772,14 +2772,14 @@ if not SECRET_KEY:
 MONGO_URI = os.getenv('MONGO_URI')
 
 # SMTP Configuration
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp-relay.brevo.com")
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp-relay.brevo.com").strip()
 try:
-    SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587").strip())
 except ValueError:
     SMTP_PORT = 0
-SMTP_LOGIN = os.getenv("SMTP_LOGIN")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+SMTP_LOGIN = (os.getenv("SMTP_LOGIN") or "").strip() or None
+SMTP_PASSWORD = (os.getenv("SMTP_PASSWORD") or "").strip() or None
+SENDER_EMAIL = (os.getenv("SENDER_EMAIL") or "").strip() or None
 JWT_TTL_HOURS = int(os.getenv('JWT_TTL_HOURS', '24'))
 # Retraining replaces the fraud model every user is scored with, so it can be limited to named
 # administrators. Unset = single-owner mode: any signed-in user may retrain.
