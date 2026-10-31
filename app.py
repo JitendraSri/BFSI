@@ -19,6 +19,7 @@ import traceback
 from PIL import Image, ImageOps, UnidentifiedImageError
 from dateutil.relativedelta import relativedelta
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix
 import sys
 import threading
 import queue
@@ -3249,6 +3250,10 @@ class LocalTimeJSONProvider(DefaultJSONProvider):
 
 
 app.json = LocalTimeJSONProvider(app)
+# Trust one level of reverse-proxy headers (Render's load balancer).
+# ProxyFix rewrites REMOTE_ADDR from X-Forwarded-For so get_remote_address
+# returns the real client IP instead of the shared proxy IP.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 CORS(app, resources={r"/*": {"origins": FRONTEND_ORIGIN}})
 
 # --- RATE LIMITING ---

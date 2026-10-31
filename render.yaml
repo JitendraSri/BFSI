@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: finrag-ai
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 1 --worker-class gthread --threads 8 --timeout 120 --bind 0.0.0.0:$PORT
+    envVars:
+      # ── secrets: set manually in Render dashboard (sync: false keeps them out of git) ──
+      - key: MONGO_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SMTP_LOGIN
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SENDER_EMAIL
+        sync: false
+      # ── auto-generated secret (Render rotates on each deploy) ──
+      - key: SECRET_KEY
+        generateValue: true
+      # ── non-secret config ──
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: DB_NAME
+        value: BFSI
+      - key: SMTP_SERVER
+        value: smtp-relay.brevo.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: FRONTEND_ORIGIN
+        value: https://finrag-ai.onrender.com   # update to your actual Render URL
