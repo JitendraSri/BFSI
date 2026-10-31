@@ -5952,6 +5952,22 @@ def parse_money(value, field='amount', allow_zero=False):
     return round(amount, 2)
 
 
+@app.route('/api/smtp-status', methods=['GET'])
+def smtp_status():
+    """Public diagnostic — shows SMTP config (no secrets) and validation errors."""
+    errors = validate_smtp_config()
+    return jsonify({
+        "SMTP_SERVER": SMTP_SERVER,
+        "SMTP_PORT": SMTP_PORT,
+        "SMTP_LOGIN_SET": bool(SMTP_LOGIN),
+        "SMTP_PASSWORD_SET": bool(SMTP_PASSWORD),
+        "SENDER_EMAIL_SET": bool(SENDER_EMAIL),
+        "SENDER_EMAIL": SENDER_EMAIL,
+        "validation_errors": errors,
+        "valid": len(errors) == 0,
+    })
+
+
 @app.route('/api/test-smtp', methods=['POST'])
 @auth_required
 def test_smtp():

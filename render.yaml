@@ -25,8 +25,8 @@ services:
       - key: DB_NAME
         value: BFSI
       - key: SMTP_SERVER
-        value: smtp-relay.brevo.com
+        value: smtp.gmail.com
       - key: SMTP_PORT
         value: "587"
       - key: FRONTEND_ORIGIN
-        value: https://finrag-ai.onrender.com   # update to your actual Render URL
+        value: https://finrag-7j6h.onrender.com
