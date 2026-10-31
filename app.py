@@ -5990,13 +5990,15 @@ def smtp_status():
         try:
             import resend as resend_sdk
             resend_sdk.api_key = RESEND_API_KEY
+            test_to = request.args.get("to", SENDER_EMAIL or "talabattulajitendrasri@gmail.com")
             resp = resend_sdk.Emails.send({
                 "from": "FinRAG AI <onboarding@resend.dev>",
-                "to": [SENDER_EMAIL or "talabattulajitendrasri@gmail.com"],
+                "to": [test_to],
                 "subject": "FinRAG SMTP Test",
                 "html": "<p>Test email from FinRAG diagnostic.</p>",
             })
             result["test_send"] = "ok"
+            result["test_to"] = test_to
             result["test_response"] = str(resp)
         except Exception as e:
             result["test_send"] = "failed"
