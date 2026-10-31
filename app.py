@@ -5982,11 +5982,25 @@ def parse_money(value, field='amount', allow_zero=False):
 
 @app.route('/api/smtp-status', methods=['GET'])
 def smtp_status():
-    """Public diagnostic — shows email config (no secrets exposed)."""
+    """Public diagnostic — shows email config and tests Resend connectivity."""
     result = {"resend_configured": bool(RESEND_API_KEY)}
     if RESEND_API_KEY:
         result["email_backend"] = "resend"
         result["resend_key_prefix"] = RESEND_API_KEY[:8] + "..."
+        try:
+            import resend as resend_sdk
+            resend_sdk.api_key = RESEND_API_KEY
+            resp = resend_sdk.Emails.send({
+                "from": "FinRAG AI <onboarding@resend.dev>",
+                "to": [SENDER_EMAIL or "talabattulajitendrasri@gmail.com"],
+                "subject": "FinRAG SMTP Test",
+                "html": "<p>Test email from FinRAG diagnostic.</p>",
+            })
+            result["test_send"] = "ok"
+            result["test_response"] = str(resp)
+        except Exception as e:
+            result["test_send"] = "failed"
+            result["test_error"] = f"{type(e).__name__}: {e}"
     else:
         errors = validate_smtp_config()
         result["email_backend"] = "smtp"
