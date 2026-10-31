@@ -2796,9 +2796,6 @@ ADMIN_EMAILS = {email.strip().casefold() for email in os.getenv('ADMIN_EMAILS', 
 
 def is_admin(claims):
     return not ADMIN_EMAILS or str(claims.get('email', '')).strip().casefold() in ADMIN_EMAILS
-OTP_TTL_MINUTES = 10
-OTP_RESEND_COOLDOWN_SECONDS = 60
-OTP_MAX_RESENDS_PER_HOUR = 5
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'assets', 'uploads')
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -2852,11 +2849,6 @@ def validate_smtp_config(server=SMTP_SERVER, port=SMTP_PORT, login=SMTP_LOGIN,
         if not value:
             errors.append(f"{name} is required")
     return errors
-
-
-def _otp_digest(email, otp):
-    message = f"{email.strip().casefold()}:{otp}".encode("utf-8")
-    return hmac.new(SECRET_KEY.encode("utf-8"), message, hashlib.sha256).hexdigest()
 
 
 def _send_email(to_email, subject, html_body):
@@ -2913,23 +2905,6 @@ def _send_email_smtp(to_email, subject, html_body):
     except Exception as e:
         logger.error("SMTP email failed during %s — %s: %s", stage, type(e).__name__, e)
         return False
-
-
-def send_otp_email(to_email, otp, subject="Your Verification Code"):
-    body = f"""
-    <html>
-      <body>
-        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
-          <h2 style="color: #333;">Verification Code</h2>
-          <p>Your One-Time Password (OTP) is:</p>
-          <h1 style="color: #4CAF50; letter-spacing: 5px;">{otp}</h1>
-          <p>This code is valid for 10 minutes.</p>
-          <p>If you did not request this, please ignore this email.</p>
-        </div>
-      </body>
-    </html>
-    """
-    return _send_email(to_email, subject, body)
 
 
 def send_fraud_alert_email(to_email, high_risk_rows, file_name):
@@ -4158,69 +4133,6 @@ def register():
         return jsonify({'error': 'Registration Failed', 'detail': 'The account could not be created. Please try again.'}), 503
 
 
-@app.route('/resend-registration-otp', methods=['POST'])
-@limiter.limit("3 per minute")
-def resend_registration_otp():
-    data = request.get_json(silent=True) or {}
-    email = str(data.get('email', '')).strip()
-    if not email or len(email) > 254:
-        return jsonify({'error': 'Enter the email address used during registration.'}), 400
-
-    db = get_db()
-    if db is None:
-        return jsonify({'error': 'Email verification is temporarily unavailable. Please try again later.'}), 503
-
-    user = find_user_by_email(db, email)
-    if not user or user.get('is_verified'):
-        return jsonify({'message': 'If this account is awaiting verification, a new code will be sent.'}), 202
-
-    now = datetime.datetime.now()
-    last_sent = user.get('otp_last_sent')
-    if isinstance(last_sent, datetime.datetime):
-        seconds_since_last = (now - last_sent).total_seconds()
-        if seconds_since_last < OTP_RESEND_COOLDOWN_SECONDS:
-            retry_after = max(1, OTP_RESEND_COOLDOWN_SECONDS - int(seconds_since_last))
-            return jsonify({'error': f'Please wait {retry_after} seconds before requesting another code.'}), 429
-
-    window_started = user.get('otp_resend_window_started_at')
-    window_is_current = (
-        isinstance(window_started, datetime.datetime)
-        and now - window_started < timedelta(hours=1)
-    )
-    resend_count = user.get('otp_resend_count', 0) if window_is_current else 0
-    if resend_count >= OTP_MAX_RESENDS_PER_HOUR:
-        return jsonify({'error': 'You have reached the verification code resend limit. Try again later.'}), 429
-
-    otp = f"{secrets.randbelow(1_000_000):06d}"
-    otp_expiry = now + timedelta(minutes=OTP_TTL_MINUTES)
-    next_window_started = window_started if window_is_current else now
-    query = {'_id': user['_id'], 'is_verified': {'$ne': True}}
-    for field in ('otp_last_sent', 'otp_resend_window_started_at', 'otp_resend_count'):
-        query[field] = user[field] if field in user else {'$exists': False}
-
-    update = {
-        '$set': {
-            'otp_hash': _otp_digest(email, otp),
-            'otp_expiry': otp_expiry,
-            'otp_last_sent': now,
-            'otp_resend_window_started_at': next_window_started,
-            'otp_resend_count': resend_count + 1
-        },
-        '$unset': {'otp_code': ''}
-    }
-    try:
-        result = db.users.update_one(query, update)
-    except Exception as error:
-        logger.error("OTP resend database update failed (%s)", type(error).__name__)
-        return jsonify({'error': 'Email verification is temporarily unavailable. Please try again later.'}), 503
-
-    if result.matched_count != 1:
-        return jsonify({'error': 'A code was just requested. Wait before trying again.'}), 429
-    if not send_otp_email(email, otp):
-        return jsonify({'error': 'A new code was created, but email delivery failed. Please try again after the cooldown.'}), 503
-    return jsonify({'message': 'A new verification code was sent. Any earlier code is no longer valid.'}), 200
-
-
 @app.route('/login', methods=['POST'])
 @limiter.limit("10 per minute")
 def login():
@@ -4270,133 +4182,6 @@ def login():
     return jsonify({'status': 'ok', 'token': token, 'user': clean_user}), 200
 
 
-
-
-@app.route('/verify-registration', methods=['POST'])
-@limiter.limit("10 per minute")
-def verify_registration():
-    data = request.get_json(silent=True) or {}
-    email = str(data.get('email', '')).strip()
-    otp = str(data.get('otp', '')).strip()
-
-    if not email or not otp:
-        return jsonify({'error': 'Email and OTP required'}), 400
-
-    db = get_db()
-    if db is None:
-        return jsonify({'error': 'Email verification is temporarily unavailable. Please try again later.'}), 503
-    user = find_user_by_email(db, email)
-
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-        
-    if user.get('is_verified'):
-        return jsonify({'message': 'User already verified'}), 200
-        
-    stored_hash = user.get('otp_hash')
-    if stored_hash:
-        otp_is_valid = hmac.compare_digest(str(stored_hash), _otp_digest(email, str(otp)))
-    else:
-        otp_is_valid = hmac.compare_digest(str(user.get('otp_code', '')), str(otp))
-
-    if otp_is_valid:
-        # Check expiry
-        if user.get('otp_expiry') and user['otp_expiry'] > datetime.datetime.now():
-            db.users.update_one(
-                {'email': user.get('email', email)},
-                {
-                    '$set': {'is_verified': True},
-                    '$unset': {'otp_hash': '', 'otp_code': '', 'otp_expiry': '', 'otp_last_sent': ''}
-                }
-            )
-            return jsonify({'message': 'Verification successful. You can now login.'}), 200
-        else:
-             return jsonify({'error': 'OTP expired'}), 400
-    else:
-        return jsonify({'error': 'Invalid OTP'}), 400
-
-@app.route('/forgot-password', methods=['POST'])
-@limiter.limit("3 per minute")
-def forgot_password():
-    data = request.get_json(silent=True) or {}
-    email = str(data.get('email', '')).strip().casefold()
-    if not email or len(email) > 254 or '@' not in email:
-        return jsonify({'error': 'Enter a valid account email address.'}), 400
-
-    db = get_db()
-    if db is None:
-        return jsonify({'error': 'Service is temporarily unavailable — cannot reach the database. Please try again later.'}), 503
-
-    smtp_errors = validate_smtp_config()
-    if smtp_errors:
-        logger.error("Password reset blocked — SMTP misconfigured: %s", smtp_errors)
-        return jsonify({'error': 'Email service is not configured. Contact the administrator.'}), 503
-
-    user = find_user_by_email(db, email)
-
-    if user and user.get('is_verified') is True:
-        otp = f"{secrets.randbelow(1_000_000):06d}"
-        now = datetime.datetime.now()
-        result = db.users.update_one(
-            {'user_id': user.get('user_id'), 'is_verified': True},
-            {'$set': {
-                'password_reset_otp_hash': _otp_digest(email, otp),
-                'password_reset_otp_expiry': now + timedelta(minutes=OTP_TTL_MINUTES),
-                'password_reset_otp_last_sent': now
-            }}
-        )
-        if result.matched_count == 1 and not send_otp_email(email, otp, subject="Password Reset OTP"):
-            logger.warning("Password reset OTP delivery failed for a verified account")
-            return jsonify({'error': 'OTP delivery failed. Check your email address or try again later.'}), 503
-
-    return jsonify({
-        'message': 'If a verified account exists for that address, a password reset code has been sent.'
-    }), 202
-
-@app.route('/reset-password', methods=['POST'])
-@limiter.limit("5 per minute")
-def reset_password():
-    data = request.get_json(silent=True) or {}
-    email = str(data.get('email', '')).strip().casefold()
-    otp = str(data.get('otp', '')).strip()
-    new_password = data.get('new_password')
-    if not email or not otp or not isinstance(new_password, str):
-        return jsonify({'error': 'Email, reset code, and new password are required.'}), 400
-    if not otp.isdigit() or len(otp) != 6:
-        return jsonify({'error': 'Enter the six-digit password reset code.'}), 400
-    if not re.fullmatch(r'\d{6}', new_password):
-        return jsonify({'error': 'Set a 6-digit PIN (numbers only).'}), 400
-
-    db = get_db()
-    if db is None:
-        return jsonify({'error': 'Password reset is temporarily unavailable. Please try again later.'}), 503
-    user = find_user_by_email(db, email)
-    if not user:
-        return jsonify({'error': 'Invalid or expired password reset code.'}), 400
-    if user.get('is_verified') is not True:
-        return jsonify({'error': 'Invalid or expired password reset code.'}), 400
-
-    stored_hash = user.get('password_reset_otp_hash')
-    expiry = user.get('password_reset_otp_expiry')
-    valid_hash = bool(stored_hash) and hmac.compare_digest(str(stored_hash), _otp_digest(email, otp))
-    if not valid_hash or not isinstance(expiry, datetime.datetime) or expiry <= datetime.datetime.now():
-        return jsonify({'error': 'Invalid or expired password reset code.'}), 400
-
-    hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
-    result = db.users.update_one(
-        {'email': user.get('email', email), 'password_reset_otp_hash': stored_hash},
-        {
-            '$set': {'password_hash': hashed_password.decode('utf-8')},
-            '$unset': {
-                'password_reset_otp_hash': '',
-                'password_reset_otp_expiry': '',
-                'password_reset_otp_last_sent': ''
-            }
-        }
-    )
-    if result.modified_count != 1:
-        return jsonify({'error': 'Invalid or expired password reset code.'}), 400
-    return jsonify({'message': 'Password reset successful. Please login.'}), 200
 
 
 def normalize_uploaded_transactions(df, user_id, user_profile=None, column_map=None, return_invalid=False):
