@@ -3484,7 +3484,7 @@ def auth_required(f):
     return decorated
 
 
-# ── Delete account (OTP-gated) ────────────────────────────────────────────────
+# ── Delete account ────────────────────────────────────────────────────────────
 
 @app.route('/api/auth/delete-account', methods=['DELETE'])
 @auth_required
@@ -6295,7 +6295,7 @@ def setup_demo_data():
     if db is None:
         print("Database is unavailable.")
         return
-    # Created directly as verified: a setup script cannot answer an emailed OTP.
+    # Created directly as verified: registration auto-verifies all accounts.
     if not db.users.find_one({'email': email}):
         db.users.insert_one({
             'user_id': str(uuid.uuid4()), 'name': 'ML Admin', 'email': email, 'currency': 'INR',
