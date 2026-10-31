@@ -83,7 +83,10 @@ document.documentElement.setAttribute('data-theme', savedTheme);
             if (remaining <= 0) {
                 clearInterval(tick);
                 localStorage.removeItem('token');
-                window.location.href = '/login';
+                const p = window.location.pathname;
+                const isPublicPage = p === '/' || p === '' || p.endsWith('/index.html')
+                    || p === '/login' || p === '/register' || p === '/forgot-password';
+                if (!isPublicPage) window.location.href = '/login';
                 return;
             }
             if (remaining <= WARNING_BEFORE_MS) {
