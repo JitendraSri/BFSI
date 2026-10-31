@@ -4141,12 +4141,10 @@ def register():
         existing_user = find_user_by_email(db, email)
         if existing_user:
             if not existing_user.get('is_verified'):
-                return jsonify({
-                    'error': 'This account is awaiting email verification. Request a new code below.',
-                    'verification_pending': True,
-                    'email': existing_user.get('email', email)
-                }), 409
-            return jsonify({'error': 'Email already exists'}), 400
+                # Old unverified account — upgrade it to verified and let user proceed
+                db.users.delete_one({'user_id': existing_user['user_id']})
+            else:
+                return jsonify({'error': 'Email already exists'}), 400
 
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
@@ -4158,9 +4156,7 @@ def register():
                 return jsonify({'error': str(error)}), 400
         
         user_id = str(uuid.uuid4())
-        otp = f"{secrets.randbelow(1_000_000):06d}"
         now = datetime.datetime.now()
-        otp_expiry = now + timedelta(minutes=OTP_TTL_MINUTES)
 
         user = {
             'user_id': user_id,
@@ -4170,24 +4166,18 @@ def register():
             'balance': initial_balance,
             'currency': 'INR',
             'created_at': now,
-            'is_verified': False,
-            'otp_hash': _otp_digest(data['email'], otp),
-            'otp_expiry': otp_expiry,
-            'otp_last_sent': now,
-            'otp_resend_window_started_at': now,
-            'otp_resend_count': 0
+            'is_verified': True,
         }
-        
+
         db.users.insert_one(user)
-        
-        if not send_otp_email(data['email'], otp):
-            return jsonify({
-                'error': 'Your account was created, but the verification email could not be sent. Wait 60 seconds, then request a new code.',
-                'verification_pending': True,
-                'email': data['email']
-            }), 503
-        
-        return jsonify({'message': 'Registration successful! OTP sent.', 'user_id': user_id}), 201
+
+        issued_at = int(time.time())
+        token = jwt.encode(
+            {'user_id': user_id, 'email': data['email'],
+             'iat': issued_at, 'exp': issued_at + JWT_TTL_HOURS * 3600},
+            SECRET_KEY, algorithm='HS256'
+        )
+        return jsonify({'message': 'Registration successful!', 'user_id': user_id, 'token': token}), 201
         
     except Exception as e:
         logger.error(f"DB Error during register: {e}")

@@ -323,20 +323,14 @@
         });
         const data = await res.json();
         if (res.ok) {
-          currentEmail = email;
-          document.getElementById('verifyEmail').value = currentEmail;
-          hideAll();
-          document.getElementById('verifyForm').classList.remove('hidden');
-          startResendCooldown();
-          setMsg('Registered! Check your email for the OTP.', 'ok');
-        } else {
-          if (data.verification_pending) {
-            currentEmail = email;
-            document.getElementById('verifyEmail').value = currentEmail;
-            hideAll();
-            document.getElementById('verifyForm').classList.remove('hidden');
-            startResendCooldown();
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+            window.location.replace('/dashboard');
+          } else {
+            setMsg('Registered! Please sign in.', 'ok');
+            showLogin();
           }
+        } else {
           setMsg(data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Registration failed'));
         }
       } catch (err) { setMsg(`Connection error: ${err.message}`); }
