@@ -3231,7 +3231,7 @@ load_ml_model()
 genai_service = GenAIService()
 
 # CORS Configuration - restrict to configured frontend origin
-FRONTEND_ORIGIN = os.getenv('FRONTEND_ORIGIN', 'http://localhost:5000')
+FRONTEND_ORIGIN = os.getenv('FRONTEND_ORIGIN', 'http://localhost:5000').strip()
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 
