@@ -2878,7 +2878,7 @@ def _send_email(to_email, subject, html_body):
         logger.info("Email sent successfully (%s)", subject)
         return True
     except Exception as e:
-        logger.error("Email delivery failed during %s (%s)", stage, type(e).__name__)
+        logger.error("Email delivery failed during %s — %s: %s", stage, type(e).__name__, e)
         return False
 
 
@@ -5950,6 +5950,31 @@ def parse_money(value, field='amount', allow_zero=False):
     if amount > MAX_MONEY_AMOUNT:
         raise ValueError(f'The {field} must not exceed {MAX_MONEY_AMOUNT:,}.')
     return round(amount, 2)
+
+
+@app.route('/api/test-smtp', methods=['POST'])
+@auth_required
+def test_smtp():
+    """Diagnostic: attempt SMTP connection and return detailed result. Auth-protected."""
+    import smtplib as _smtplib
+    result = {"server": SMTP_SERVER, "port": SMTP_PORT, "login": SMTP_LOGIN,
+              "sender": SENDER_EMAIL, "password_set": bool(SMTP_PASSWORD)}
+    validate_errors = validate_smtp_config()
+    if validate_errors:
+        return jsonify({"ok": False, "stage": "validation", "errors": validate_errors, **result}), 503
+    stage = "connect"
+    try:
+        with _smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as srv:
+            srv.ehlo()
+            stage = "starttls"
+            srv.starttls()
+            srv.ehlo()
+            stage = "login"
+            srv.login(SMTP_LOGIN, SMTP_PASSWORD)
+            stage = "done"
+        return jsonify({"ok": True, "stage": stage, **result})
+    except Exception as e:
+        return jsonify({"ok": False, "stage": stage, "error": str(e), "type": type(e).__name__, **result}), 500
 
 
 @app.route('/api/metrics', methods=['GET'])
