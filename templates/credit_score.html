@@ -188,7 +188,6 @@
             const tips = [];
             if (flagged > 0) tips.push({ icon: '⚠️', text: 'Review and dispute flagged transactions to lower your risk score.' });
             if (monthsData < 6) tips.push({ icon: '📅', text: 'Upload more months of bank statements for a more accurate score.' });
-            if (!verified) tips.push({ icon: '📧', text: 'Verify your email address to boost the account verification factor.' });
             if (totalTxns < 30) tips.push({ icon: '💳', text: 'More transaction history improves the activity factor.' });
             if (fraudRisk !== 'Low') tips.push({ icon: '🛡️', text: 'Your account has Medium/High fraud risk. Check recent alerts.' });
             if (tips.length === 0) tips.push({ icon: '🎉', text: 'Great health! Keep maintaining consistent, fraud-free transactions.' });

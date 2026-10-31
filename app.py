@@ -6226,8 +6226,6 @@ def update_profile():
             return jsonify({'error': 'User not found'}), 404
         
         update_data = {}
-        email_otp = None
-        email_verification_required = False
         if 'name' in data:
             name = str(data.get('name', '')).strip()
             if not name or len(name) > 120:
@@ -6238,20 +6236,15 @@ def update_profile():
             current_email = str(current_user.get('email', '')).strip().casefold()
             if not new_email or len(new_email) > 254 or '@' not in new_email:
                 return jsonify({'error': 'Enter a valid email address.'}), 400
+            if not new_email.endswith('@gmail.com'):
+                return jsonify({'error': 'Only Gmail addresses (@gmail.com) are supported.'}), 400
             if new_email != current_email:
                 existing = db.users.find_one({'email': new_email, 'user_id': {'$ne': user_id}})
                 if existing:
                     return jsonify({'error': 'Email already in use'}), 409
-                email_otp = f"{secrets.randbelow(1_000_000):06d}"
-                now = datetime.datetime.now()
                 update_data.update({
                     'email': new_email,
-                    'is_verified': False,
-                    'otp_hash': _otp_digest(new_email, email_otp),
-                    'otp_expiry': now + timedelta(minutes=OTP_TTL_MINUTES),
-                    'otp_last_sent': now,
-                    'otp_resend_window_started_at': now,
-                    'otp_resend_count': 0,
+                    'is_verified': True,
                 })
 
         if 'savings_amount' in data:
@@ -6295,14 +6288,6 @@ def update_profile():
             return jsonify({'error': 'User not found'}), 404
         
         user = db.users.find_one({'user_id': user_id})
-        if email_otp:
-            email_verification_required = True
-            if not send_otp_email(user['email'], email_otp, subject='Your Verification Code'):
-                return jsonify({
-                    'error': 'The email was changed, but its verification code could not be sent. Request a new code from sign-in.',
-                    'email_verification_required': True,
-                    'email_verified': False,
-                }), 503
         invalidate_user_cache(user_id)
         return jsonify({
             'id': user['user_id'],
