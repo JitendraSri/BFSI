@@ -315,6 +315,7 @@
       const name = document.getElementById('regName').value;
       const email = document.getElementById('regEmail').value;
       const password = document.getElementById('regPass').value;
+      if (!email.endsWith('@gmail.com')) { setMsg('Only Gmail addresses (@gmail.com) are supported.'); return; }
       if (!/^[0-9]{6}$/.test(password)) { setMsg('PIN must be exactly 6 digits (numbers only).'); return; }
       try {
         const res = await fetch(`${API_BASE}/register`, {

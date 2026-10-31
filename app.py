@@ -4126,6 +4126,8 @@ def register():
         return jsonify({'error': 'Enter a name of 1 to 120 characters.'}), 400
     if not email or len(email) > 254 or not re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', email):
         return jsonify({'error': 'Enter a valid email address.'}), 400
+    if not email.endswith('@gmail.com'):
+        return jsonify({'error': 'Only Gmail addresses (@gmail.com) are supported.'}), 400
     # Accounts use a 6-digit numeric PIN.
     if not isinstance(password, str) or not re.fullmatch(r'\d{6}', password):
         return jsonify({'error': 'Set a 6-digit PIN (numbers only).'}), 400
