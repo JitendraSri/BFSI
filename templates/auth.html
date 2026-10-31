@@ -77,7 +77,7 @@
       <div class="trust-badges">
         <div class="trust-badge"><i class="fas fa-shield-alt"></i> ML Fraud Detection (98.7% accuracy)</div>
         <div class="trust-badge"><i class="fas fa-search"></i> FinRAG Copilot — page-level citations</div>
-        <div class="trust-badge"><i class="fas fa-lock"></i> 6-digit PIN + OTP two-factor security</div>
+        <div class="trust-badge"><i class="fas fa-lock"></i> 6-digit PIN security</div>
         <div class="trust-badge"><i class="fas fa-database"></i> Your data never leaves your server</div>
       </div>
     </div>
@@ -136,57 +136,18 @@
           </p>
         </div>
 
-        <!-- ── Verify OTP ── -->
-        <div id="verifyForm" class="hidden">
-          <h2 class="text-center">Verify Email</h2>
-          <p class="text-center" style="color:#aaa; font-size:0.88rem; margin-bottom:1rem;">
-            We sent a 6-digit code to your email. Enter it below.
-          </p>
-          <form onsubmit="handleVerify(event)">
-            <input type="email" id="verifyEmail" placeholder="Email Address" required disabled>
-            <input type="text" id="verifyOtp" placeholder="Enter 6-digit OTP" required maxlength="6"
-                   inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code"
-                   style="letter-spacing:0.3em; font-size:1.2rem; text-align:center;">
-            <button type="submit" class="btn" style="width:100%">Verify Account</button>
-          </form>
-          <button type="button" id="resendOtpButton" class="btn" style="width:100%; margin-top:0.75rem; background:rgba(255,255,255,0.07);"
-            onclick="handleResendOtp()">Resend Code</button>
-          <div id="resend-countdown"></div>
-          <p class="text-center mt-2" style="font-size:0.85rem;">
-            <a href="#" onclick="showLogin(); return false;">Back to Login</a>
-          </p>
-        </div>
-
         <!-- ── Forgot Password ── -->
         <div id="forgotForm" class="hidden">
-          <h2 class="text-center">Reset Password</h2>
+          <h2 class="text-center">Forgot PIN?</h2>
           <p class="text-center" style="color:#aaa; font-size:0.88rem; margin-bottom:1rem;">
-            Enter your registered email — we'll send a reset code.
+            PIN reset via email is not available. To regain access, delete your account and create a new one.
           </p>
-          <form onsubmit="handleForgot(event)">
-            <input type="email" id="forgotEmail" placeholder="Registered email address" required autocomplete="email">
-            <button type="submit" class="btn" style="width:100%">Send Reset Code</button>
-          </form>
+          <div style="background:rgba(231,76,60,0.1); border:1px solid rgba(231,76,60,0.3); border-radius:8px; padding:1rem; font-size:0.85rem; color:#e74c3c; margin-bottom:1rem;">
+            <strong>Note:</strong> Deleting your account will permanently remove all your data (transactions, documents, alerts).
+          </div>
           <p class="text-center mt-2" style="font-size:0.85rem;">
             <a href="#" onclick="showLogin(); return false;">Back to Login</a>
           </p>
-        </div>
-
-        <!-- ── Reset Password ── -->
-        <div id="resetForm" class="hidden">
-          <h2 class="text-center">New Password</h2>
-          <form onsubmit="handleReset(event)">
-            <input type="email" id="resetEmail" placeholder="Email Address" required disabled>
-            <input type="text" id="resetOtp" placeholder="Enter OTP from email" required maxlength="6"
-                   inputmode="numeric" style="letter-spacing:0.3em; font-size:1.2rem; text-align:center;">
-            <div class="pass-wrap" style="margin-top:0.5rem;">
-              <input type="password" id="resetPass" placeholder="New 6-digit PIN" required autocomplete="new-password" maxlength="6" inputmode="numeric" pattern="[0-9]{6}">
-              <button type="button" class="pass-toggle" onclick="togglePass('resetPass', this)" tabindex="-1">
-                <i class="fas fa-eye"></i>
-              </button>
-            </div>
-            <button type="submit" class="btn" style="width:100%; margin-top:0.75rem;">Update Password</button>
-          </form>
         </div>
 
         <div id="message" class="auth-msg err"></div>
@@ -230,23 +191,6 @@
       lbl.style.color = lvl.bg;
     }
 
-    /* ── OTP resend countdown ── */
-    function startResendCooldown(seconds = 60) {
-      const btn = document.getElementById('resendOtpButton');
-      const cd  = document.getElementById('resend-countdown');
-      btn.disabled = true;
-      let remaining = seconds;
-      resendTimer = setInterval(() => {
-        remaining--;
-        cd.textContent = `Resend available in ${remaining}s`;
-        if (remaining <= 0) {
-          clearInterval(resendTimer);
-          btn.disabled = false;
-          cd.textContent = '';
-        }
-      }, 1000);
-    }
-
     /* ── Navigation helpers ── */
     function setMsg(text, type = 'err') {
       const el = document.getElementById('message');
@@ -255,7 +199,7 @@
     }
 
     function hideAll() {
-      ['loginForm','registerForm','verifyForm','forgotForm','resetForm'].forEach(id =>
+      ['loginForm','registerForm','forgotForm'].forEach(id =>
         document.getElementById(id).classList.add('hidden')
       );
       setMsg('');
@@ -296,13 +240,6 @@
         } else {
           const msg = data.detail ? `${data.error}: ${data.detail}` : (data.error || 'Login failed');
           setMsg(msg);
-          if (msg.toLowerCase().includes('verify')) {
-            currentEmail = email;
-            document.getElementById('verifyEmail').value = currentEmail;
-            hideAll();
-            document.getElementById('verifyForm').classList.remove('hidden');
-            startResendCooldown();
-          }
         }
       } catch (err) {
         setMsg(`Connection error: ${err.message}`);
@@ -337,82 +274,6 @@
       } catch (err) { setMsg(`Connection error: ${err.message}`); }
     }
 
-    /* ── Resend OTP ── */
-    async function handleResendOtp() {
-      const email = document.getElementById('verifyEmail').value || currentEmail;
-      if (!email) { setMsg('Email address not found. Please go back and re-register.'); return; }
-      try {
-        const res = await fetch(`${API_BASE}/resend-registration-otp`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ email })
-        });
-        const data = await res.json();
-        setMsg(data.message || data.error || 'Code sent!', res.ok ? 'ok' : 'err');
-        if (res.ok) startResendCooldown();
-      } catch { setMsg('Could not contact verification service.'); }
-    }
-
-    /* ── Verify OTP ── */
-    async function handleVerify(e) {
-      e.preventDefault();
-      const otp = document.getElementById('verifyOtp').value;
-      const email = document.getElementById('verifyEmail').value || currentEmail;
-      try {
-        const res = await fetch(`${API_BASE}/verify-registration`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ email, otp })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          showToast('Email verified! Please sign in.', 'success');
-          showLogin();
-        } else { setMsg(data.error || 'Verification failed'); }
-      } catch (err) { setMsg('Request failed: ' + err.message); }
-    }
-
-    /* ── Forgot Password ── */
-    async function handleForgot(e) {
-      e.preventDefault();
-      const email = document.getElementById('forgotEmail').value;
-      currentEmail = email;
-      try {
-        const res = await fetch(`${API_BASE}/forgot-password`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ email })
-        });
-        if (res.ok) {
-          hideAll();
-          document.getElementById('resetEmail').value = currentEmail;
-          document.getElementById('resetForm').classList.remove('hidden');
-          setMsg('Reset code sent to your email.', 'ok');
-        } else {
-          const data = await res.json();
-          setMsg(data.error || 'Failed to send reset code');
-        }
-      } catch (err) { setMsg('Request failed: ' + err.message); }
-    }
-
-    /* ── Reset Password ── */
-    async function handleReset(e) {
-      e.preventDefault();
-      const email = document.getElementById('resetEmail').value;
-      const otp   = document.getElementById('resetOtp').value;
-      const new_password = document.getElementById('resetPass').value;
-      if (!/^[0-9]{6}$/.test(new_password)) { setMsg('PIN must be exactly 6 digits (numbers only).'); return; }
-      try {
-        const res = await fetch(`${API_BASE}/reset-password`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ email, otp, new_password })
-        });
-        if (res.ok) {
-          showToast('Password updated! Please sign in.', 'success');
-          showLogin();
-        } else {
-          const data = await res.json();
-          setMsg(data.error || 'Reset failed');
-        }
-      } catch (err) { setMsg('Request failed: ' + err.message); }
-    }
   </script>
 </body>
 

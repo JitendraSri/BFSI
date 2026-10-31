@@ -129,13 +129,13 @@
       <p style="color:#aaa; font-size:0.85rem; margin-bottom:1.5rem;">Permanently deletes your account and all associated data. This cannot be undone.</p>
       <div id="deleteMsg" style="margin-bottom:0.5rem;"></div>
       <div id="deleteStep1">
-        <button class="btn" style="background:#e74c3c; width:100%;" onclick="requestDeleteOtp()">Delete My Account</button>
+        <button class="btn" style="background:#e74c3c; width:100%;" onclick="startDeleteConfirm()">Delete My Account</button>
       </div>
       <div id="deleteStep2" style="display:none;">
-        <p style="color:#f39c12; font-size:0.85rem; margin-bottom:1rem;">An OTP has been sent to your email. Enter it below to confirm deletion.</p>
+        <p style="color:#f39c12; font-size:0.85rem; margin-bottom:1rem;">Enter your 6-digit PIN to confirm permanent deletion.</p>
         <div class="form-group">
-          <label>OTP Code</label>
-          <input type="text" id="deleteOtp" placeholder="6-digit code" maxlength="6">
+          <label>Your PIN</label>
+          <input type="password" id="deletePIN" placeholder="Enter your PIN" maxlength="6" inputmode="numeric">
         </div>
         <div style="display:flex; gap:1rem;">
           <button class="btn" style="background:#e74c3c; flex:1;" onclick="confirmDelete()">Confirm Delete</button>
@@ -333,33 +333,21 @@
       } catch(e) { msg.innerHTML = '<span style="color:#e74c3c">Connection error.</span>'; }
     }
 
-    async function requestDeleteOtp() {
-      const msg = document.getElementById('deleteMsg');
-      try {
-        const res = await fetch(API_BASE + '/api/auth/delete-account-otp', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const data = await res.json();
-        if (res.ok) {
-          document.getElementById('deleteStep1').style.display = 'none';
-          document.getElementById('deleteStep2').style.display = 'block';
-          msg.innerHTML = '<span style="color:#2ecc71">OTP sent to your email.</span>';
-        } else {
-          msg.innerHTML = `<span style="color:#e74c3c">${data.error || 'Could not send OTP.'}</span>`;
-        }
-      } catch(e) { msg.innerHTML = '<span style="color:#e74c3c">Connection error.</span>'; }
+    function startDeleteConfirm() {
+      document.getElementById('deleteStep1').style.display = 'none';
+      document.getElementById('deleteStep2').style.display = 'block';
+      document.getElementById('deleteMsg').innerHTML = '';
     }
 
     async function confirmDelete() {
-      const otp = document.getElementById('deleteOtp').value.trim();
+      const pin = document.getElementById('deletePIN').value.trim();
       const msg = document.getElementById('deleteMsg');
-      if (!otp) { msg.innerHTML = '<span style="color:#f39c12">Enter the OTP.</span>'; return; }
+      if (!pin) { msg.innerHTML = '<span style="color:#f39c12">Enter your PIN.</span>'; return; }
       try {
         const res = await fetch(API_BASE + '/api/auth/delete-account', {
           method: 'DELETE',
           headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ otp })
+          body: JSON.stringify({ pin })
         });
         const data = await res.json();
         if (res.ok) {
@@ -376,7 +364,7 @@
     function cancelDelete() {
       document.getElementById('deleteStep1').style.display = 'block';
       document.getElementById('deleteStep2').style.display = 'none';
-      document.getElementById('deleteOtp').value = '';
+      document.getElementById('deletePIN').value = '';
       document.getElementById('deleteMsg').innerHTML = '';
     }
 

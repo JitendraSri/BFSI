@@ -193,7 +193,7 @@ function injectSidebar(isLoggedIn = true) {
                     <span class="sidebar-icon">💡</span>
                     <span>Insights</span>
                 </a>
-                <a href="/profile" class="sidebar-link" data-page="profile" data-tip="Edit your name, change your password, verify email or delete your account with OTP confirmation">
+                <a href="/profile" class="sidebar-link" data-page="profile" data-tip="Edit your name, change your PIN, or permanently delete your account">
                     <span class="sidebar-icon">👤</span>
                     <span>Profile</span>
                 </a>

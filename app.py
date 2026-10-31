@@ -3626,38 +3626,15 @@ def auth_required(f):
 
 # ── Delete account (OTP-gated) ────────────────────────────────────────────────
 
-@app.route('/api/auth/delete-account-otp', methods=['POST'])
-@auth_required
-@limiter.limit("3 per hour")
-def api_delete_account_otp():
-    user_id = request.user['user_id']
-    email   = request.user.get('email', '')
-    db = get_db()
-    if db is None:
-        return jsonify({'error': 'Service temporarily unavailable.'}), 503
-    otp = f"{secrets.randbelow(1_000_000):06d}"
-    now = datetime.datetime.now()
-    db.users.update_one(
-        {'user_id': user_id},
-        {'$set': {
-            'delete_otp_hash':   _otp_digest(email, otp),
-            'delete_otp_expiry': now + timedelta(minutes=10),
-        }}
-    )
-    if not send_otp_email(email, otp, subject="Account Deletion OTP"):
-        logger.warning("Delete OTP delivery failed for user %s", user_id)
-    return jsonify({'message': 'OTP sent to your email.'}), 202
-
 @app.route('/api/auth/delete-account', methods=['DELETE'])
 @auth_required
 @limiter.limit("3 per hour")
 def api_delete_account():
     user_id = request.user['user_id']
-    email   = request.user.get('email', '')
     data    = request.get_json(silent=True) or {}
-    otp     = str(data.get('otp', '')).strip()
-    if not otp or not otp.isdigit() or len(otp) != 6:
-        return jsonify({'error': 'Enter the 6-digit code sent to your email.'}), 400
+    pin     = str(data.get('pin', '')).strip()
+    if not pin or not pin.isdigit() or len(pin) != 6:
+        return jsonify({'error': 'Enter your 6-digit PIN to confirm.'}), 400
 
     db = get_db()
     if db is None:
@@ -3666,13 +3643,8 @@ def api_delete_account():
     if not user:
         return jsonify({'error': 'Account not found.'}), 404
 
-    stored_hash = user.get('delete_otp_hash')
-    expiry      = user.get('delete_otp_expiry')
-    if (not stored_hash
-            or not hmac.compare_digest(str(stored_hash), _otp_digest(email, otp))
-            or not isinstance(expiry, datetime.datetime)
-            or expiry <= datetime.datetime.now()):
-        return jsonify({'error': 'Invalid or expired code.'}), 400
+    if not bcrypt.checkpw(pin.encode('utf-8'), user['password_hash'].encode('utf-8')):
+        return jsonify({'error': 'Incorrect PIN.'}), 400
 
     db.transactions.delete_many({'user_id': user_id})
     db.alerts.delete_many({'user_id': user_id})
