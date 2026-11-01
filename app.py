@@ -3432,6 +3432,25 @@ except Exception as e:
 
 db = client[DB_NAME] if client else None
 
+# Migrate indexes: replace the old global unique index on transaction_id with a
+# compound (user_id, transaction_id) unique index so each user has their own namespace.
+if db is not None:
+    try:
+        db.transactions.drop_index("transaction_id_1")
+        print("DEBUG: Dropped old global transaction_id unique index.")
+    except Exception:
+        pass  # already gone or never existed
+    try:
+        db.transactions.create_index(
+            [("user_id", pymongo.ASCENDING), ("transaction_id", pymongo.ASCENDING)],
+            unique=True,
+            name="user_transaction_unique"
+        )
+        db.transactions.create_index("user_id", name="user_id_1")
+        print("DEBUG: Transaction indexes ensured.")
+    except Exception as _idx_err:
+        print(f"WARNING: Could not ensure transaction indexes: {_idx_err}")
+
 @app.route('/test-atlas', methods=['GET'])
 @diagnostics_only
 def test_atlas():
@@ -6226,7 +6245,11 @@ def seed_database():
         print("Creating indexes...")
         db.users.create_index("email", unique=True)
         db.transactions.create_index("user_id")
-        db.transactions.create_index("transaction_id", unique=True)
+        db.transactions.create_index(
+            [("user_id", pymongo.ASCENDING), ("transaction_id", pymongo.ASCENDING)],
+            unique=True,
+            name="user_transaction_unique"
+        )
         db.fraud_alerts.create_index("user_id")
         
         print("Indexes created.")
