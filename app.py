@@ -4394,8 +4394,9 @@ def persist_transaction_import(df, user_id, file_name, import_batch_id,
         ))
 
     result = db.transactions.bulk_write(bulk_ops) if bulk_ops else None
-    imported = result.upserted_count + result.modified_count if result else 0
-    unchanged = max(0, result.matched_count - result.modified_count) if result else 0
+    # BulkWriteResult counts use .get() internally and can return None; guard with `or 0`
+    imported = (result.upserted_count or 0) + (result.modified_count or 0) if result else 0
+    unchanged = max(0, (result.matched_count or 0) - (result.modified_count or 0)) if result else 0
     db.file_uploads.insert_one({
         'user_id': user_id,
         'file_name': file_name,
