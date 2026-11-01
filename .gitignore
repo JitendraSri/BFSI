@@ -9,7 +9,8 @@ venv/
 
 # dotenv
 .env
-assets/rag_documents/
+assets/rag_documents/*
+!assets/rag_documents/finrag_reports
 assets/private_kyc_documents/
 
 # User-uploaded data (profile photos, statements, etc.)
