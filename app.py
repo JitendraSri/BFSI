@@ -2374,7 +2374,10 @@ def score_transactions(model, encoder, bundle, frame, history=None):
     }, columns=MODEL_FEATURES)
     probability = np.asarray(model.predict_proba(features))[:, 1].astype(float)
     threshold = (bundle or {}).get('threshold', DEFAULT_THRESHOLD)
-    anomaly = anomaly_scores(bundle, features) if bundle else np.zeros(len(features))
+    try:
+        anomaly = anomaly_scores(bundle, features) if bundle else np.zeros(len(features))
+    except Exception:
+        anomaly = np.zeros(len(features))
     weights = (bundle or {}).get('risk_weights', RISK_WEIGHTS) if bundle else (1.0, 0.0)
     risk = np.round((weights[0] * probability + weights[1] * anomaly) * 100, 1)
 
