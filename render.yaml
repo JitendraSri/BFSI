@@ -2,6 +2,7 @@ services:
   - type: web
     name: finrag-ai
     runtime: python
+    pythonVersion: "3.12.4"
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --workers 1 --worker-class gthread --threads 8 --timeout 120 --bind 0.0.0.0:$PORT
     envVars:

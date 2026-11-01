@@ -4296,7 +4296,8 @@ def normalize_uploaded_transactions(df, user_id, user_profile=None, column_map=N
             logger.warning("Upload fraud analysis unavailable (%s)", type(error).__name__)
 
     if explicit_fraud is not None:
-        predictions = explicit_fraud.fillna(predictions).astype(int)
+        merged = explicit_fraud.fillna(predictions)
+        predictions = pd.to_numeric(merged, errors='coerce').fillna(0).astype(int)
     normalized['is_fraud'] = predictions
     normalized['fraud_probability'] = probabilities
     normalized['_source_row'] = normalized.index + 2
@@ -4801,7 +4802,9 @@ def confirm_transaction_upload():
         return jsonify({'error': 'Upload preview expired or unavailable. Please upload the file again.'}), 410
 
     try:
-        df = pd.read_json(io.StringIO(staged['rows']), orient='records', convert_dates=['timestamp'])
+        df = pd.read_json(io.StringIO(staged['rows']), orient='records')
+        if 'timestamp' in df.columns:
+            df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
         result = persist_transaction_import(
             df,
             user_id,
@@ -4820,7 +4823,7 @@ def confirm_transaction_upload():
                 rollback_import_batch(user_id, rollback_batch_id)
             except Exception:
                 pass
-        logger.error("Transaction import commit failed (%s)", type(error).__name__)
+        logger.exception("Transaction import commit failed")
         return jsonify({'error': 'Transactions could not be saved. Your preview is still available to retry.'}), 503
 
     cache.delete(preview_key)
