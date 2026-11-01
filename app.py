@@ -4802,7 +4802,7 @@ def confirm_transaction_upload():
         return jsonify({'error': 'Upload preview expired or unavailable. Please upload the file again.'}), 410
 
     try:
-        df = pd.read_json(io.StringIO(staged['rows']), orient='records')
+        df = pd.read_json(io.StringIO(staged['rows']), orient='records', convert_dates=False)
         if 'timestamp' in df.columns:
             df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
         result = persist_transaction_import(
